@@ -30,7 +30,7 @@ conn.MySQL <- function(db_parms)
 Source the credentials parameter file from your local directory.  Do not store in github repository since R has no encryption capability.
 
 ```{r Read the user MySQl Parameter credentials file}
-filename <- "/Users/Audiorunner13/CUNY MSDS Course Work/DATA607 Spring 2021/Week7/Project3/MySQL_parms.csv"
+filename <- "Your Parm file goes here"
 db_parms <- read.csv(filename)
 ```
 
@@ -67,8 +67,8 @@ dbListFields(db_conn, "location_dim")
 Source the movie dimension file from the movies github repository to load to the movie dimension
 
 ```{r Source the location dimension file to load}
-filename <- "/Users/Audiorunner13/CUNY MSDS Course Work/DATA607 Spring 2021/Week7/Project3/Data/job_location.csv"
-location_dim_df <- read.csv(filename)
+filename <- getURL("https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Peter%20Folder/Data/job_location.csv")
+location_dim_df <- read.csv(text=filename)
 head(location_dim_df,10)
 ```
 
@@ -82,8 +82,8 @@ dbWriteTable(db_conn, name = "location_dim", value = location_dim_df, append = T
 Source the customer dimension file from the movies github repository to load to the customer dimension
 
 ```{r Source the job Openings file to load}
-filename <- "/Users/Audiorunner13/CUNY MSDS Course Work/DATA607 Spring 2021/Week7/Project3/Data/job_openings.csv"
-job_opening_df <- read.csv(filename)
+filename <- getURL("https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Peter%20Folder/Data/data_scientist_job_openings.csv")
+job_opening_df <- read.csv(text=filename)
 head(job_opening_df,10)
 ```
 
@@ -95,8 +95,8 @@ dbWriteTable(db_conn, name = "job_opening_tbl", value = job_opening_df, append =
 Source the sql file in the movies github repositpry.  The sql will extract all survey answers and order by them first name, last name, and movie title and will replace nulls in the AFI 100 Rank field if a movie is not ranked.
 
 ```{r source sql file and substitute each new line "\n" with a space}
-filename <- "/Users/Audiorunner13/CUNY MSDS Course Work/DATA607 Spring 2021/Week7/Project3/Sql/jobs_location.sql"
-db_sql <- readChar(filename, file.info(filename)$size)
+filename <- getURL("https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Peter%20Folder/Sql/jobs_location.sql")
+db_sql <- read_file(filename)
 db_sql <- gsub("\n", " ",db_sql)
 db_sql
 ```
