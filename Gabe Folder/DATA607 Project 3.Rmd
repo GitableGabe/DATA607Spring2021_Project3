@@ -98,3 +98,14 @@ there is **not** necessarily a *“right answer.”*
 <!------- Below is for removing excessive space in Rmarkdown | HTML formatting -------->
 
 <div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
+
+```{r}
+library(DSI)
+library(odbc)
+```
+
+```{r}
+con <- dbConnect(odbc(),"newuser")
+dbListTables(con)
+```
+
