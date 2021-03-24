@@ -33,7 +33,6 @@ library(knitr)
 library(RMySQL)
 library(DSI)
 library(odbc)
-library(stringr)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
@@ -99,7 +98,6 @@ Database `job` is created on each team members local machine using MySQL. Using 
 ```{r List the fields in the location dimension database table}
 # table location_dim fields are listed below
 dbListFields(db_conn, "location_dim")
-dbListFields(db_conn, "job_opening_tbl")
 ```
 
 #### Load CSV
@@ -137,7 +135,6 @@ OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
 ```
 
 ```{r}
-url_DS_job_market<- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/Eai1ECgMhthLmrut-eIdD5oBw4715IvolGgyG54owY0nWg?e=D0iRKm"
 
 url_location<-
    "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EYAX_5NCc_hFtSUFY0W4NPMBEXiRYtgro4V3vrSJbpTcag?e=aRKrpf"
@@ -150,9 +147,6 @@ csv_locations<-
 
 csv_job_openings<-
    "job_openings.csv"
-
-csv_DS_job_market <-
-  "alldata.csv"
 ```
 
 Calling the `OD_DL_csv()` function the csv files are loaded to `location_dim_df` and `job_opening_df`
@@ -165,6 +159,7 @@ location_dim_df <- OD_DL_csv(sharedURL = url_location,
 head(location_dim_df,5)
 ```
 
+
 ```{r Source the job Openings file to load}
 
 job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
@@ -173,53 +168,6 @@ job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
 
 head(job_opening_df,5)
 ```
-
-```{r Source the job Openings file to load}
-# additional un tidy data set
-DS_job_df <- OD_DL_csv(sharedURL = url_DS_job_market,
-          file_name = csv_DS_job_market
-          )
-
-head(DS_job_df,5)
-```
-
-### Manipulating Imported CSV Dataset
-
-
-```{r}
-# add unique ID column based on row name of each entry
-DS_job_df<-cbind( data.frame("uniq_id" = as.integer(rownames(DS_job_df))), DS_job_df)
-
-# add 40K to each uniq_id to ensure none match the first 30K entries of the other sets
-DS_job_df<-DS_job_df %>%
-  mutate_at( vars("uniq_id") ,
-             funs(.+40000))
-```
-
-
-```{r}
-test<-DS_job_df %>%
-  mutate_at( vars("location") ,
-             ~str_extract(.,"*",3))
-
-
-```
-
-
-
-
-
-
-```{r}
-job_opening_df <-rbind(DS_job_df %>% 
-                         select(1,2,4) %>%
-                            dplyr::rename( "uniq_id" = `uniq_id`,
-                            "job_title" = `position`,
-                            "job_descr" = `description`)
-                      ,job_opening_df)
-```
-
-
 
 #### Write to Database
 
@@ -259,9 +207,7 @@ head(result_set,5)
 class(result_set)
 ```
 
-```{r}
-job_opening_df %>% mutate_at( vars( matches("job_desc")) ,~str_view( . ,"<.*.>") )
-```
+### Manipulating Imported Data
 
 ### Analysis
 
