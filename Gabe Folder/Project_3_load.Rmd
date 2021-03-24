@@ -1,0 +1,114 @@
+---
+title: "Project 3 - Data Scientist Skills"
+subtitle: "DATA607 - Acquisition of Data and Management - Instructor: Andrew Catlin"
+Subtitle: "Team 7: Gabriel Campos, Maliat Islam, Joe Connolly, Gabriella Martinez"
+date: "Date: 3/23/2021"
+output:
+  html_document: default
+  pdf_document: default
+---
+```{r message=FALSE}
+# Load needed libraries
+library(devtools)
+library(tidyverse)
+library(RCurl)
+library(plyr)
+library(knitr)
+library(RMySQL)
+library(DSI)
+library(odbc)
+```
+
+Function call to MySQL db to connect and use the return command in a function.
+
+```{r MySQL Connect Function}
+  db_conn <- dbConnect(odbc(),"data607")
+    dbListTables(db_conn)
+```
+
+
+```{r List the fields in the location dimension database table}
+dbListFields(db_conn, "location_dim")
+```
+
+```{r}
+```{r}
+OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
+
+   # Save the shared url 
+   URL1 <- unlist(strsplit(sharedURL,"[?]"))[1]
+   URL1 <- paste0(URL1,"?download=1") # edit URL to make it a downloadable link
+   
+   # Download the file to a temp directory using the supplied file name
+   curl::curl_download(
+      URL1,
+      destfile = file.path(tempdir(), file_name),
+      mode = "wb"
+      )
+
+
+   # If the user wants it saved to thier working directory this will copy the file
+   if(isTRUE(save2wd)){
+      file.copy(
+         from = paste0(tempdir(),"\\", file_name),
+         to = "./")
+      }
+
+   # return the CSV as a data.frame
+   return(read.csv(paste0(tempdir(), "\\" ,file_name), stringsAsFactors = FALSE))
+
+}
+
+```
+
+
+```{r Source the location dimension file to load}
+location_dim_df <- OD_DL_csv(sharedURL = "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EYAX_5NCc_hFtSUFY0W4NPMBEXiRYtgro4V3vrSJbpTcag?e=aRKrpf",
+          file_name = "job_location.csv"
+          )
+
+head(location_dim_df,10)
+```
+
+Drop dimension and fact tables if they exist. Dropping and reloading is only recommended when table size and contents is small.  Write the database tables from their respective data frames.
+
+```{r Append new records to location dimension}
+dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "location_dim", value = location_dim_df, append = TRUE,row.names = FALSE)
+```
+
+Source the customer dimension file from the movies github repository to load to the customer dimension
+
+```{r Source the job Openings file to load}
+filename <- getURL("https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Peter%20Folder/Data/data_scientist_job_openings.csv")
+job_opening_df <- read.csv(text=filename)
+head(job_opening_df,10)
+```
+
+```{r append new records to the job opening table}
+dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "job_opening_tbl", value = job_opening_df, append = TRUE, row.names = FALSE)
+```
+
+Source the sql file in the movies github repositpry.  The sql will extract all survey answers and order by them first name, last name, and movie title and will replace nulls in the AFI 100 Rank field if a movie is not ranked.
+
+```{r source sql file and substitute each new line "\n" with a space}
+filename <- getURL("https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Peter%20Folder/Sql/jobs_location.sql")
+db_sql <- read_file(filename)
+db_sql <- gsub("\n", " ",db_sql)
+db_sql
+```
+
+Execute the sql query joining the fact table to the dimension tables and return all records in the result set.  Specify the number of records to return by adjusting the "n = " argument.
+
+```{r execute sql query and return result set}
+db_data = dbSendQuery(db_conn, db_sql)
+result_set = fetch(db_data, n = -1)
+head(result_set,10)
+```
+
+The result_set containing the extracted data is a data.frame.
+
+```{r display the class of the result set}
+class(result_set)
+```
