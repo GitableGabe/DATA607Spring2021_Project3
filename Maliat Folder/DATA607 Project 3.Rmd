@@ -25,16 +25,19 @@ editor_options:
     "sandstone", "simplex", "yeti"  -------->
 
 ```{r, echo=FALSE,warning=FALSE, results='hide', include=FALSE}
+library(devtools)
 library(tidyverse)
-library(dplyr)
-library(reactable)
-library(kableExtra)
-library(stringr)
+library(RCurl)
+library(plyr)
+library(knitr)
+library(RMySQL)
+library(DSI)
+library(odbc)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
 
-### Main Title {.tabset .tabset-pills}
+### Project 3 {.tabset .tabset-pills}
 
 
 
@@ -54,7 +57,7 @@ Please **note especially** the **requirement** about making a **presentation** d
 Consider your work as an exploration:
 there is **not** necessarily a *“right answer.”*
 
-##### Grading rubric:
+#### Grading rubric
 
 * You will need to determine what **tool(s)** you’ll use as a group to effectively collaborate, **share code** and any **project documentation** *(such as motivation, approach, findings).*
 * You will have to determine **what data** to collect, **where the data** can be found, and **how to load** it.
@@ -81,16 +84,129 @@ there is **not** necessarily a *“right answer.”*
 
 
 
-### Primary Sub Label {.tabset .tabset-pills}
+### Database Import {.tabset .tabset-pills}
 
-#### Secondary Sub Label {.tabset}
+#### Connect to local Database 
 
-##### Import Data
+Database `job` is created on each team members local machine using MySQL. Using an **Open Data Base Connectivity (ODBC)** Driver. A connection is established using the **Data Source Name (DSN)** linking `R` to the appropriate user with `SELECT` and `INSERT` privileges. 
+
+```{r MySQL Connect Function}
+  db_conn <- dbConnect(odbc(),"data607")
+    dbListTables(db_conn)
+```
+
+```{r List the fields in the location dimension database table}
+# table location_dim fields are listed below
+dbListFields(db_conn, "location_dim")
+```
+
+#### Load CSV
+
+Function `OD_DL_csv` is created in order to access the necessary `CSV` files containing over 30,000 observations. This method of was select over loading from Github, do to storage limitations with files this large. shared file URL and csv names are stored into variables `url_location`, `url_job_openings`, `csv_location` and `csv_openings` respectively. 
+
+```{r}
+OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
+
+   # Save the shared url 
+   URL1 <- unlist(strsplit(sharedURL,"[?]"))[1]
+   URL1 <- paste0(URL1,"?download=1") # edit URL to make it a downloadable link
+   
+   # Download the file to a temp directory using the supplied file name
+   curl::curl_download(
+      URL1,
+      destfile = file.path(tempdir(), file_name),
+      mode = "wb"
+      )
 
 
-##### Manipulating Imported Data
+   # If the user wants it saved to thier working directory this will copy the file
+   if(isTRUE(save2wd)){
+      file.copy(
+         from = paste0(tempdir(),"\\", file_name),
+         to = "./")
+      }
 
-##### Analysis
+   # return the CSV as a data.frame
+   return(read.csv(paste0(tempdir(), "\\" ,file_name), stringsAsFactors = FALSE))
+
+}
+
+```
+
+```{r, echo=FALSE}
+
+url_location<-
+   "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EYAX_5NCc_hFtSUFY0W4NPMBEXiRYtgro4V3vrSJbpTcag?e=aRKrpf"
+
+url_job_openings<-
+   "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EWni58F8o9BKqLwvF-FDdIEBX7nGv3l7PeueVkrUEPhJ_A?e=9hOyGN"
+
+csv_locations<-
+   "job_locations.csv"
+
+csv_job_openings<-
+   "job_openings.csv"
+```
+
+Calling the `OD_DL_csv()` function the csv files are loaded to `location_dim_df` and `job_opening_df`
+
+```{r Source the location dimension file to load}
+location_dim_df <- OD_DL_csv(sharedURL = url_location,
+          file_name = csv_locations
+          )
+
+head(location_dim_df,5)
+```
+
+```{r Source the job Openings file to load}
+job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
+          file_name = csv_job_openings
+          )
+
+head(job_opening_df,5)
+```
+
+#### Write to Database
+
+Using [dbWriteTable](https://dbi.r-dbi.org/reference/dbwritetable) function, we are able to write these imported dataframes into the appropriate Database tables on our local Database.
+
+```{r Append new records to location dimension}
+#dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "location_dim", value = location_dim_df, append = TRUE,row.names = FALSE)
+```
+
+```{r append new records to the job opening table}
+#dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "job_opening_tbl", value = job_opening_df, append = TRUE, row.names = FALSE)
+```
+
+An [SQL in the Project 3 Repo](https://github.com/gcampos100/DATA607_CUNY_2021_Project3/tree/main/Gabe%20Folder) is used, to retreive the merged data, filtered by job titles, containg the word $DATA$.
+
+```{r, echo=FALSE}
+filename <-"https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Gabe%20Folder/jobs_location.sql"
+```
+
+
+```{r source sql file and substitute each new line "\n" with a space}
+filename <-"https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Gabe%20Folder/jobs_location.sql"
+db_sql <- read_file(filename)
+db_sql <- gsub("\n", " ",db_sql)
+db_sql
+```
+
+```{r execute sql query and return result set}
+result_set = dbGetQuery(db_conn, db_sql)
+#result_set = fetch(db_data, n = -1)
+head(result_set,5)
+```
+
+```{r display the class of the result set}
+class(result_set)
+```
+
+### Manipulating Imported Data
+
+### Analysis
 
 ##### Conclusion
 
@@ -98,3 +214,4 @@ there is **not** necessarily a *“right answer.”*
 <!------- Below is for removing excessive space in Rmarkdown | HTML formatting -------->
 
 <div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
+
