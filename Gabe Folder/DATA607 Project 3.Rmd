@@ -25,16 +25,19 @@ editor_options:
     "sandstone", "simplex", "yeti"  -------->
 
 ```{r, echo=FALSE,warning=FALSE, results='hide', include=FALSE}
+library(devtools)
 library(tidyverse)
-library(dplyr)
-library(reactable)
-library(kableExtra)
-library(stringr)
+library(RCurl)
+library(plyr)
+library(knitr)
+library(RMySQL)
+library(DSI)
+library(odbc)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
 
-### Main Title {.tabset .tabset-pills}
+### Project 3 {.tabset .tabset-pills}
 
 
 
@@ -54,7 +57,7 @@ Please **note especially** the **requirement** about making a **presentation** d
 Consider your work as an exploration:
 there is **not** necessarily a *“right answer.”*
 
-##### Grading rubric:
+#### Grading rubric
 
 * You will need to determine what **tool(s)** you’ll use as a group to effectively collaborate, **share code** and any **project documentation** *(such as motivation, approach, findings).*
 * You will have to determine **what data** to collect, **where the data** can be found, and **how to load** it.
@@ -81,16 +84,16 @@ there is **not** necessarily a *“right answer.”*
 
 
 
-### Primary Sub Label {.tabset .tabset-pills}
+### Database Import {.tabset .tabset-pills}
 
-#### Secondary Sub Label {.tabset}
+#### Load Data 
 
-##### Import Data
+#### Import Data
 
 
-##### Manipulating Imported Data
+### Manipulating Imported Data
 
-##### Analysis
+### Analysis
 
 ##### Conclusion
 
