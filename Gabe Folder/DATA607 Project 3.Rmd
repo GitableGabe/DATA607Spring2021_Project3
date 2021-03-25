@@ -174,7 +174,7 @@ job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
 head(job_opening_df,5)
 ```
 
-```{r Source the job Openings file to load}
+```{r Source the job Openings file to load 2}
 # additional un tidy data set
 DS_job_df <- OD_DL_csv(sharedURL = url_DS_job_market,
           file_name = csv_DS_job_market
@@ -197,11 +197,22 @@ DS_job_df<-DS_job_df %>%
 ```
 
 
-```{r}
-test<-DS_job_df %>%
-  mutate_at( vars("location") ,
-             ~str_extract(.,"*",3))
 
+
+```{r, results=FALSE}
+# splitting up the location column to create state, city, zip_code
+temp<-as.data.frame(str_split_fixed(DS_job_df$location,",",2))
+temp$V2<-str_trim(temp$V2)
+temp$V2<-str_replace_all(temp$V2, "\\s", " == ")
+DS_job_df<-(temp<-cbind(DS_job_df,"city" = temp$V1,
+            as.data.frame(str_split_fixed(temp$V2,"==",2)))%>%
+                                              dplyr::rename("state"=V1, "zip_code"=V2))
+# loading country column with a constan "United State" value
+DS_job_df$country<-"United States"
+
+# quick rearrange
+DS_job_df<-DS_job_df %>%
+  select(uniq_id,position,description,location,city,state,country,zip_code,company,reviews)
 
 ```
 
@@ -212,7 +223,7 @@ test<-DS_job_df %>%
 
 ```{r}
 job_opening_df <-rbind(DS_job_df %>% 
-                         select(1,2,4) %>%
+                         select(1,2,3) %>%
                             dplyr::rename( "uniq_id" = `uniq_id`,
                             "job_title" = `position`,
                             "job_descr" = `description`)
@@ -220,6 +231,10 @@ job_opening_df <-rbind(DS_job_df %>%
 ```
 
 
+```{r}
+location_dim_df <-rbind(DS_job_df %>% 
+                         select(1,4,5,6,7,8),location_dim_df)
+```
 
 #### Write to Database
 
@@ -260,7 +275,7 @@ class(result_set)
 ```
 
 ```{r}
-job_opening_df %>% mutate_at( vars( matches("job_desc")) ,~str_view( . ,"<.*.>") )
+#job_opening_df %>% mutate_at( vars( matches("job_desc")) ,~str_view( . ,"<.*.>") )
 ```
 
 ### Analysis
