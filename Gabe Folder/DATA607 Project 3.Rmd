@@ -137,6 +137,8 @@ OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
 ```
 
 ```{r}
+url_Cleaned_DS <- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EdcuUpO6t1RIqyHw-OP90UQB2qRYY3fcW5RPyA_xT348Qw?e=4HeXbe"
+
 url_DS_job_market<- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/Eai1ECgMhthLmrut-eIdD5oBw4715IvolGgyG54owY0nWg?e=D0iRKm"
 
 url_location<-
@@ -153,6 +155,8 @@ csv_job_openings<-
 
 csv_DS_job_market <-
   "alldata.csv"
+
+csv_Cleaned_DS<- "Cleaned_DS_Jobs.csv"
 ```
 
 Calling the `OD_DL_csv()` function the csv files are loaded to `location_dim_df` and `job_opening_df`
@@ -184,6 +188,17 @@ head(DS_job_df,5)
 ```
 
 ### Manipulating Imported CSV Dataset
+
+```{r}
+job_opening_df <- job_opening_df %>%
+  filter(grepl('Data',job_title))
+```
+
+```{r}
+location_dim_df <- location_dim_df %>%
+  filter(uniq_id %in% test$uniq_id)
+```
+
 
 
 ```{r}
