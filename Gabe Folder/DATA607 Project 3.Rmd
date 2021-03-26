@@ -166,7 +166,6 @@ location_dim_df <- OD_DL_csv(sharedURL = url_location,
           file_name = csv_locations
           )
 
-head(location_dim_df,5)
 ```
 
 ```{r Source the job Openings file to load}
@@ -174,8 +173,6 @@ head(location_dim_df,5)
 job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
           file_name = csv_job_openings
           )
-
-head(job_opening_df,5)
 ```
 
 ```{r Source the job Openings file to load 2}
@@ -183,22 +180,26 @@ head(job_opening_df,5)
 DS_job_df <- OD_DL_csv(sharedURL = url_DS_job_market,
           file_name = csv_DS_job_market
           )
-
-head(DS_job_df,5)
 ```
 
 ### Manipulating Imported CSV Dataset
 
-```{r}
+```{r, results='hide'}
+# to filter 30,000 rows in rmd and lighten the load to MySQL
 job_opening_df <- job_opening_df %>%
   filter(grepl('Data',job_title))
 ```
 
-```{r}
+```{r, results='hide'}
+# to filter 30,000 rows in rmd and lighten the load to MySQL
 location_dim_df <- location_dim_df %>%
-  filter(uniq_id %in% test$uniq_id)
+  filter(uniq_id %in% job_opening_df$uniq_id)
 ```
 
+
+```{r}
+job_opening_df$job_descr <- gsub("<[^>]+>","",job_opening_df$job_descr)
+```
 
 
 ```{r}
