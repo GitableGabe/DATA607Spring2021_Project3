@@ -1,0 +1,30 @@
+```{r}
+library(tau)
+library(data.table)
+```
+```{r}
+phrases <- result_set$job_descr
+#view(phrases)
+
+createNgram <-function(stringVector, ngramSize){
+
+  ngram <- data.table()
+
+  ng <- textcnt(stringVector, method = "string", n=ngramSize, tolower = FALSE)
+
+  if(ngramSize==1){
+    ngram <- data.table(w1 = names(ng), freq = unclass(ng), length=nchar(names(ng)))  
+  }
+  else {
+    ngram <- data.table(w1w2 = names(ng), freq = unclass(ng), length=nchar(names(ng)))
+  }
+  return(ngram)
+}
+```
+```{r}
+text <- phrases
+res <- createNgram(text,1)
+names(res)
+head(res %>% arrange(desc(freq)),40)
+#res
+```
