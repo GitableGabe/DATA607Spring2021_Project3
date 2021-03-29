@@ -33,9 +33,6 @@ library(knitr)
 library(RMySQL)
 library(DSI)
 library(odbc)
-library(stringr)
-library(tau)
-library(data.table)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
@@ -101,7 +98,6 @@ Database `job` is created on each team members local machine using MySQL. Using 
 ```{r List the fields in the location dimension database table}
 # table location_dim fields are listed below
 dbListFields(db_conn, "location_dim")
-dbListFields(db_conn, "job_opening_tbl")
 ```
 
 #### Load CSV
@@ -109,7 +105,6 @@ dbListFields(db_conn, "job_opening_tbl")
 Function `OD_DL_csv` is created in order to access the necessary `CSV` files containing over 30,000 observations. This method of was select over loading from Github, do to storage limitations with files this large. shared file URL and csv names are stored into variables `url_location`, `url_job_openings`, `csv_location` and `csv_openings` respectively. 
 
 ```{r}
-
 OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
 
    # Save the shared url 
@@ -138,10 +133,7 @@ OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
 
 ```
 
-```{r}
-url_Cleaned_DS <- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EdcuUpO6t1RIqyHw-OP90UQB2qRYY3fcW5RPyA_xT348Qw?e=4HeXbe"
-
-url_DS_job_market<- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/Eai1ECgMhthLmrut-eIdD5oBw4715IvolGgyG54owY0nWg?e=D0iRKm"
+```{r, echo=FALSE}
 
 url_location<-
    "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EYAX_5NCc_hFtSUFY0W4NPMBEXiRYtgro4V3vrSJbpTcag?e=aRKrpf"
@@ -154,11 +146,6 @@ csv_locations<-
 
 csv_job_openings<-
    "job_openings.csv"
-
-csv_DS_job_market <-
-  "alldata.csv"
-
-csv_Cleaned_DS<- "Cleaned_DS_Jobs.csv"
 ```
 
 Calling the `OD_DL_csv()` function the csv files are loaded to `location_dim_df` and `job_opening_df`
@@ -168,97 +155,22 @@ location_dim_df <- OD_DL_csv(sharedURL = url_location,
           file_name = csv_locations
           )
 
+head(location_dim_df,5)
 ```
 
 ```{r Source the job Openings file to load}
-
 job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
           file_name = csv_job_openings
           )
-```
 
-```{r Source the job Openings file to load 2}
-# additional un tidy data set
-DS_job_df <- OD_DL_csv(sharedURL = url_DS_job_market,
-          file_name = csv_DS_job_market
-          )
-```
-
-### Manipulating Imported CSV Dataset
-
-```{r, results='hide'}
-# to filter 30,000 rows in rmd and lighten the load to MySQL
-job_opening_df <- job_opening_df %>%
-  filter(grepl('Data',job_title))
-```
-
-```{r, results='hide'}
-# to filter 30,000 rows in rmd and lighten the load to MySQL
-location_dim_df <- location_dim_df %>%
-  filter(uniq_id %in% job_opening_df$uniq_id)
-```
-
-
-```{r}
-job_opening_df$job_descr <- gsub("<[^>]+>","",job_opening_df$job_descr)
-```
-
-
-```{r}
-# add unique ID column based on row name of each entry
-DS_job_df<-cbind( data.frame("uniq_id" = as.integer(rownames(DS_job_df))), DS_job_df)
-
-# add 40K to each uniq_id to ensure none match the first 30K entries of the other sets
-DS_job_df<-DS_job_df %>%
-  mutate_at( vars("uniq_id") ,
-             funs(.+40000))
-```
-
-
-
-
-```{r, results=FALSE}
-# splitting up the location column to create state, city, zip_code
-temp<-as.data.frame(str_split_fixed(DS_job_df$location,",",2))
-temp$V2<-str_trim(temp$V2)
-temp$V2<-str_replace_all(temp$V2, "\\s", " == ")
-DS_job_df<-(temp<-cbind(DS_job_df,"city" = temp$V1,
-            as.data.frame(str_split_fixed(temp$V2,"==",2)))%>%
-                                              dplyr::rename("state"=V1, "zip_code"=V2))
-# loading country column with a constan "United State" value
-DS_job_df$country<-"United States"
-
-# quick rearrange
-DS_job_df<-DS_job_df %>%
-  select(uniq_id,position,description,location,city,state,country,zip_code,company,reviews)
-
-```
-
-
-
-
-
-
-```{r}
-job_opening_df <-rbind(DS_job_df %>% 
-                         select(1,2,3) %>%
-                            dplyr::rename( "uniq_id" = `uniq_id`,
-                            "job_title" = `position`,
-                            "job_descr" = `description`)
-                      ,job_opening_df)
-```
-
-
-```{r}
-location_dim_df <-rbind(DS_job_df %>% 
-                         select(1,4,5,6,7,8),location_dim_df)
+head(job_opening_df,5)
 ```
 
 #### Write to Database
 
 Using [dbWriteTable](https://dbi.r-dbi.org/reference/dbwritetable) function, we are able to write these imported dataframes into the appropriate Database tables on our local Database.
 
-```{r Append new records to location dimension, result = 'hold'}
+```{r Append new records to location dimension}
 #dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
 dbWriteTable(db_conn, name = "location_dim", value = location_dim_df, append = TRUE,row.names = FALSE)
 ```
@@ -292,38 +204,9 @@ head(result_set,5)
 class(result_set)
 ```
 
-```{r}
-#job_opening_df %>% mutate_at( vars( matches("job_desc")) ,~str_view( . ,"<.*.>") )
-```
+### Manipulating Imported Data
 
 ### Analysis
-
-```{r}
-phrases <- result_set$job_descr
-#view(phrases)
-
-createNgram <-function(stringVector, ngramSize){
-
-  ngram <- data.table()
-
-  ng <- textcnt(stringVector, method = "string", n=ngramSize, tolower = FALSE)
-
-  if(ngramSize==1){
-    ngram <- data.table(w1 = names(ng), freq = unclass(ng), length=nchar(names(ng)))  
-  }
-  else {
-    ngram <- data.table(w1w2 = names(ng), freq = unclass(ng), length=nchar(names(ng)))
-  }
-  return(ngram)
-}
-```
-
-```{r}
-text <- phrases
-res <- createNgram(text,1)
-names(res)
-head(res %>% arrange(desc(freq)),40)
-```
 
 ##### Conclusion
 
