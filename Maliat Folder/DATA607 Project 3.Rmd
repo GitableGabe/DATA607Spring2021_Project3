@@ -325,6 +325,11 @@ names(res)
 head(res %>% arrange(desc(freq)),40)
 ```
 
+```{r}
+res <- res %>%
+  arrange(desc(freq))
+```
+
 ##### Conclusion
 
 
