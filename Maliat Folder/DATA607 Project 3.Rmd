@@ -34,19 +34,9 @@ library(RMySQL)
 library(DSI)
 library(odbc)
 library(stringr)
-library(rebus)
-library(httr)
-library(rvest)
-
-```
-
-```{r}
-install.packages("tau")
 library(tau)
 library(data.table)
 ```
-
-
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
 
@@ -119,7 +109,9 @@ dbListFields(db_conn, "job_opening_tbl")
 Function `OD_DL_csv` is created in order to access the necessary `CSV` files containing over 30,000 observations. This method of was select over loading from Github, do to storage limitations with files this large. shared file URL and csv names are stored into variables `url_location`, `url_job_openings`, `csv_location` and `csv_openings` respectively. 
 
 ```{r}
+
 OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
+
    # Save the shared url 
    URL1 <- unlist(strsplit(sharedURL,"[?]"))[1]
    URL1 <- paste0(URL1,"?download=1") # edit URL to make it a downloadable link
@@ -130,30 +122,42 @@ OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
       destfile = file.path(tempdir(), file_name),
       mode = "wb"
       )
+
+
    # If the user wants it saved to thier working directory this will copy the file
    if(isTRUE(save2wd)){
       file.copy(
          from = paste0(tempdir(),"\\", file_name),
          to = "./")
       }
+
    # return the CSV as a data.frame
    return(read.csv(paste0(tempdir(), "\\" ,file_name), stringsAsFactors = FALSE))
+
 }
+
 ```
 
 ```{r}
 url_Cleaned_DS <- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EdcuUpO6t1RIqyHw-OP90UQB2qRYY3fcW5RPyA_xT348Qw?e=4HeXbe"
+
 url_DS_job_market<- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/Eai1ECgMhthLmrut-eIdD5oBw4715IvolGgyG54owY0nWg?e=D0iRKm"
+
 url_location<-
    "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EYAX_5NCc_hFtSUFY0W4NPMBEXiRYtgro4V3vrSJbpTcag?e=aRKrpf"
+
 url_job_openings<-
    "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EWni58F8o9BKqLwvF-FDdIEBX7nGv3l7PeueVkrUEPhJ_A?e=9hOyGN"
+
 csv_locations<-
    "job_locations.csv"
+
 csv_job_openings<-
    "job_openings.csv"
+
 csv_DS_job_market <-
   "alldata.csv"
+
 csv_Cleaned_DS<- "Cleaned_DS_Jobs.csv"
 ```
 
@@ -163,9 +167,11 @@ Calling the `OD_DL_csv()` function the csv files are loaded to `location_dim_df`
 location_dim_df <- OD_DL_csv(sharedURL = url_location,
           file_name = csv_locations
           )
+
 ```
 
 ```{r Source the job Openings file to load}
+
 job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
           file_name = csv_job_openings
           )
@@ -201,6 +207,7 @@ job_opening_df$job_descr <- gsub("<[^>]+>","",job_opening_df$job_descr)
 ```{r}
 # add unique ID column based on row name of each entry
 DS_job_df<-cbind( data.frame("uniq_id" = as.integer(rownames(DS_job_df))), DS_job_df)
+
 # add 40K to each uniq_id to ensure none match the first 30K entries of the other sets
 DS_job_df<-DS_job_df %>%
   mutate_at( vars("uniq_id") ,
@@ -220,9 +227,11 @@ DS_job_df<-(temp<-cbind(DS_job_df,"city" = temp$V1,
                                               dplyr::rename("state"=V1, "zip_code"=V2))
 # loading country column with a constan "United State" value
 DS_job_df$country<-"United States"
+
 # quick rearrange
 DS_job_df<-DS_job_df %>%
   select(uniq_id,position,description,location,city,state,country,zip_code,company,reviews)
+
 ```
 
 
@@ -284,15 +293,37 @@ class(result_set)
 ```
 
 ```{r}
-job_opening_df %>% mutate_at( vars( matches("job_desc")) ,~str_view( . ,"<.*.>") )
-```
-
-```{r}
-library(dplyr)
-result_set %>% mutate_at( vars( matches("job_desc")) ,~str_view( . ,"<.*.>") )%>%rowwise()
+#job_opening_df %>% mutate_at( vars( matches("job_desc")) ,~str_view( . ,"<.*.>") )
 ```
 
 ### Analysis
+
+```{r}
+phrases <- result_set$job_descr
+#view(phrases)
+
+createNgram <-function(stringVector, ngramSize){
+
+  ngram <- data.table()
+
+  ng <- textcnt(stringVector, method = "string", n=ngramSize, tolower = FALSE)
+
+  if(ngramSize==1){
+    ngram <- data.table(w1 = names(ng), freq = unclass(ng), length=nchar(names(ng)))  
+  }
+  else {
+    ngram <- data.table(w1w2 = names(ng), freq = unclass(ng), length=nchar(names(ng)))
+  }
+  return(ngram)
+}
+```
+
+```{r}
+text <- phrases
+res <- createNgram(text,1)
+names(res)
+head(res %>% arrange(desc(freq)),40)
+```
 
 ##### Conclusion
 
