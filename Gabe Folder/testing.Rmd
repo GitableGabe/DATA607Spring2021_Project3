@@ -1,0 +1,96 @@
+---
+title: "DATA607 Project 3 – Data Science Skills"
+author: "Joe Connolly, Gabriel Campos, Gabriella Martinez and Peter Gatica"
+date: "`r format(Sys.Date(), '%B %d %Y')`"
+output:
+  html_document:
+    includes:
+      in_header: header.html
+    css: ./lab.css
+    highlight: pygments
+    theme: darkly
+    toc: true
+    toc_float: true
+  prettydoc::html_pretty:
+    theme: cayman
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+<!--match.arg(theme, themes()) : 
+    'arg' should be one of "default", "cerulean", "journal","flatly",
+    "darkly", "readable", "spacelab", "united", "cosmo", "lumen", "paper", 
+    "sandstone", "simplex", "yeti"  -------->
+
+```{r, echo=FALSE,warning=FALSE, results='hide', include=FALSE}
+library(devtools)
+library(tidyverse)
+library(RCurl)
+library(plyr)
+library(knitr)
+library(RMySQL)
+library(DSI)
+library(odbc)
+```
+
+<!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
+
+```{r}
+
+OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
+
+   # Save the shared url 
+   URL1 <- unlist(strsplit(sharedURL,"[?]"))[1]
+   URL1 <- paste0(URL1,"?download=1") # edit URL to make it a downloadable link
+   
+   # Download the file to a temp directory using the supplied file name
+   curl::curl_download(
+      URL1,
+      destfile = file.path(tempdir(), file_name),
+      mode = "wb"
+      )
+
+
+   # If the user wants it saved to thier working directory this will copy the file
+   if(isTRUE(save2wd)){
+      file.copy(
+         from = paste0(tempdir(),"\\", file_name),
+         to = "./")
+      }
+
+   # return the CSV as a data.frame
+   return(read.csv(paste0(tempdir(), "\\" ,file_name), stringsAsFactors = FALSE))
+
+}
+
+```
+
+```{r}
+url_DS_job_market<- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/Eai1ECgMhthLmrut-eIdD5oBw4715IvolGgyG54owY0nWg?e=D0iRKm"
+
+csv_DS_job_market <-
+  "alldata.csv"
+```
+
+```{r Source the job Openings file to load}
+
+DS_job_df <- OD_DL_csv(sharedURL = url_DS_job_market,
+          file_name = csv_DS_job_market
+          )
+
+head(DS_job_df,5)
+```
+
+```{r}
+DS_job_df<-cbind( data.frame("uniq_id" = as.integer(rownames(DS_job_df))), DS_job_df)
+```
+
+
+```{r}
+test<-DS_job_df %>%
+  mutate_at( vars("uniq_id") ,
+             funs(.+40000))
+```
+
