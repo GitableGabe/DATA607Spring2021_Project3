@@ -34,6 +34,8 @@ library(RMySQL)
 library(DSI)
 library(odbc)
 library(stringr)
+library(tau)
+library(data.table)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
@@ -137,6 +139,8 @@ OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
 ```
 
 ```{r}
+url_Cleaned_DS <- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EdcuUpO6t1RIqyHw-OP90UQB2qRYY3fcW5RPyA_xT348Qw?e=4HeXbe"
+
 url_DS_job_market<- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/Eai1ECgMhthLmrut-eIdD5oBw4715IvolGgyG54owY0nWg?e=D0iRKm"
 
 url_location<-
@@ -153,6 +157,8 @@ csv_job_openings<-
 
 csv_DS_job_market <-
   "alldata.csv"
+
+csv_Cleaned_DS<- "Cleaned_DS_Jobs.csv"
 ```
 
 Calling the `OD_DL_csv()` function the csv files are loaded to `location_dim_df` and `job_opening_df`
@@ -162,7 +168,6 @@ location_dim_df <- OD_DL_csv(sharedURL = url_location,
           file_name = csv_locations
           )
 
-head(location_dim_df,5)
 ```
 
 ```{r Source the job Openings file to load}
@@ -170,8 +175,6 @@ head(location_dim_df,5)
 job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
           file_name = csv_job_openings
           )
-
-head(job_opening_df,5)
 ```
 
 ```{r Source the job Openings file to load 2}
@@ -179,11 +182,26 @@ head(job_opening_df,5)
 DS_job_df <- OD_DL_csv(sharedURL = url_DS_job_market,
           file_name = csv_DS_job_market
           )
-
-head(DS_job_df,5)
 ```
 
 ### Manipulating Imported CSV Dataset
+
+```{r, results='hide'}
+# to filter 30,000 rows in rmd and lighten the load to MySQL
+job_opening_df <- job_opening_df %>%
+  filter(grepl('Data',job_title))
+```
+
+```{r, results='hide'}
+# to filter 30,000 rows in rmd and lighten the load to MySQL
+location_dim_df <- location_dim_df %>%
+  filter(uniq_id %in% job_opening_df$uniq_id)
+```
+
+
+```{r}
+job_opening_df$job_descr <- gsub("<[^>]+>","",job_opening_df$job_descr)
+```
 
 
 ```{r}
@@ -279,6 +297,71 @@ class(result_set)
 ```
 
 ### Analysis
+
+```{r}
+phrases <- result_set$job_descr
+#view(phrases)
+
+createNgram <-function(stringVector, ngramSize){
+
+  ngram <- data.table()
+
+  ng <- textcnt(stringVector, method = "string", n=ngramSize, tolower = FALSE)
+
+  if(ngramSize==1){
+    ngram <- data.table(w1 = names(ng), freq = unclass(ng), length=nchar(names(ng)))  
+  }
+  else {
+    ngram <- data.table(w1w2 = names(ng), freq = unclass(ng), length=nchar(names(ng)))
+  }
+  return(ngram)
+}
+```
+
+```{r}
+text <- phrases
+res <- createNgram(text,1)
+names(res)
+head(res %>% arrange(desc(freq)),40)
+
+```
+
+
+
+```{r}
+res <- res %>%
+  arrange(desc(freq))
+view(res)
+
+```
+
+
+```{r GMsandbox_frontdoorapproach}
+# hard skills: https://towardsdatascience.com/the-most-in-demand-tech-skills-for-data-scientists-d716d10c191d
+# technical, hard and soft skills: https://zety.com/blog/data-scientist-resume-example
+# res1$w1 = tolower(res1s$w1) sets all words to lowercase
+
+#creating copy of the 1 word frequency table to find hard skills
+techskill = c("Python", "python", "R", "SQL", "sql", "Sql", "Spark", "spark", "Hadoop", "hadoop","java", "Java", "tableau", "Tableau", "AWS", "aws", "Aws", "SAS", "sas", "Hive", "hive", "TensorFlow", "Tensorflow", "tensorflow", "Scala", "scala", "C++", "c++", "Excel", "excel", "Azure", "azure")
+res1 <- res %>% 
+  select(-3) %>% 
+  filter(w1 %in% techskill)
+
+#recreating two term freq count hard skill/ technical
+hardskill= c()
+res2 <- createNgram(text,2)
+res2 <- res2 %>% 
+  select(-3) %>% 
+  #filter(w1 %in% hardskill)
+
+
+
+
+
+#typeof(df$col)
+#head(res2 %>% arrange(desc(freq)),40)
+
+```
 
 ##### Conclusion
 
