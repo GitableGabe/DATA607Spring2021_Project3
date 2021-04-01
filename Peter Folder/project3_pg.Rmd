@@ -1,0 +1,342 @@
+---
+title: "Project 3 - Data Scientist Skills"
+subtitle: "DATA607 - Acquisition of Data and Management - Instructor: Andrew Catlin"
+Subtitle: "Team 7: Gabriel Campos, Maliat Islam, Joe Connolly, Gabriella Martinez"
+date: "Date: 3/23/2021"
+output:
+  pdf_document: default
+  html_document: default
+editor_options: 
+  chunk_output_type: inline
+---
+Load needed libraries
+```{r load needed libraries, , echo=FALSE,warning=FALSE, results='hide', include=FALSE}
+library(devtools)
+library(tidyverse)
+library(RCurl)
+library(plyr)
+library(knitr)
+library(RMySQL)
+library(DSI)
+library(odbc)
+library(stringr)
+library(tau)
+library(data.table)
+```
+
+Function call to MySQL db to connect and use the return command in a function.
+
+```{r MySQL Connect Function}
+# MySQL Connect Function
+conn.MySQL <- function(db_parms)
+{
+  db_conn <- dbConnect(MySQL(), user=db_user, password=db_password, dbname=db_name, host=db_host)
+  return(db_conn)
+}
+```
+
+Source the credentials parameter file from your local directory.  Do not store in github repository since R has no encryption capability.
+
+```{r Read the user MySQl Parameter credentials file}
+# Read the user MySQl Parameter credentials file
+filename <- "/Users/Audiorunner13/CUNY MSDS Course Work/DATA607 Spring 2021/Week7/MySQL_parms.csv"
+db_parms <- read.csv(filename)
+```
+
+Set the login application credential to pass to the db log in function
+
+```{r Set  up DB parms}
+# Set  up DB parms
+db_user = db_parms$db_user
+db_password = db_parms$db_password
+db_name = db_parms$db_name
+db_host = db_parms$db_host
+db_result_set = ""
+
+db_parms <- c(db_user, db_password, db_name, db_host, db_result_set)
+```
+
+Call the conn.MySql connect function to access the movies database
+
+```{r Connect to the MySQL db}
+db_conn <- conn.MySQL(db_parms)
+```
+
+Use the dbListTables() function to list the tables in the database
+
+```{r List the tables in the jobs db}
+(dbListTables(db_conn))
+```
+
+Use the dbListFields() function to list the fields in a database table
+
+```{r List the fields in the location dimension database table}
+(dbListFields(db_conn, "location_dim"))
+```
+
+#### Load CSV
+
+Source the job locations dimension file from the  github repository to load to the locations dimension
+
+```{r Source the location dimension file to load}
+filename <- getURL("https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Peter%20Folder/Data/job_location.csv")
+location_dim_df <- read.csv(text=filename)
+```
+
+Write to database tables from their respective data frames.
+
+```{r Append initial records to location dimension}
+dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "location_dim", value = location_dim_df, append = TRUE,row.names = FALSE)
+```
+
+Source the job openings csv from the github repository to load to the job openings table.
+
+```{r Source the initial job openings file to load}
+filename <- "/Users/Audiorunner13/CUNY MSDS Course Work/DATA607 Spring 2021/Week7/Data/job_openings.csv"
+job_opening_df <- read.csv(filename)
+```
+
+```{r append initial records to the job opening table}
+# append initial records to the job opening table
+dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "job_opening_tbl", value = job_opening_df, append = TRUE, row.names = FALSE)
+```
+
+### Manipulating Imported CSV Dataset
+
+```{r Source the second job openings file to load 2}
+# additional un tidy data set
+filename <- "/Users/Audiorunner13/CUNY MSDS Course Work/DATA607 Spring 2021/Week7/Data/alldata.csv"
+DS_job_df <- read.csv(filename)
+```
+
+```{r add unique ID column, warning=FALSE}
+# add unique ID column based on row name of each entry
+DS_job_df<-cbind( data.frame("uniq_id" = as.integer(rownames(DS_job_df))), DS_job_df)
+# add 40K to each uniq_id to ensure none match the first 30K entries of the other sets
+DS_job_df<-DS_job_df %>%
+  mutate_at( vars("uniq_id") ,
+             funs(.+40000))
+```
+
+```{r split up the location column, results=FALSE}
+# splitting up the location column to create state, city, zip_code
+temp <- as.data.frame(str_split_fixed(str_trim(DS_job_df$location),", ",2))
+```
+
+```{r}
+temp$V2 <- str_replace_all(temp$V2, "\\s", "=")
+```
+
+```{r}
+DS_job_df <- (temp<-cbind(DS_job_df,"city" = temp$V1,
+             as.data.frame(str_split_fixed(temp$V2,"=",2)))%>%
+                                              dplyr::rename("state"=V1, "zip_code"=V2))
+```
+
+Loading country column with a constant "United States" value
+
+```{r set all country rows to United States}
+# set all country rows to United States
+DS_job_df$country<-"United States"
+```
+
+Quick rearrange
+
+```{r rearrange data.frame fields}
+# rearrange data.frame fields
+DS_job_df<-DS_job_df %>%
+  select(uniq_id,position,description,location,city,state,country,zip_code,company,reviews)
+```
+
+```{r create a job openings df}
+# create a job openings df
+job_opening_df <- DS_job_df %>% 
+  select(1,2,3) %>%
+    dplyr::rename( "uniq_id" = `uniq_id`,
+                    "job_title" = `position`,
+                    "job_descr" = `description`)
+```
+
+
+```{r create a locations df}
+# create a locations df
+location_dim_df <-DS_job_df %>% 
+                         select(1,4,5,6,7,8)
+```
+
+#### Write to Database
+
+Using [dbWriteTable](https://dbi.r-dbi.org/reference/dbwritetable) function, we are able to write these imported dataframes into the appropriate Database tables on our local Database.
+
+```{r Append new records to location dimension}
+# Append new records to location dimension
+dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "location_dim", value = location_dim_df, append = TRUE,row.names = FALSE)
+```
+
+```{r append new records to the job opening table}
+# append new records to the job opening table
+dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "job_opening_tbl", value = job_opening_df, append = TRUE, row.names = FALSE)
+```
+
+Source the sql file in the github repositpry.  The sql will extract all job openings data that containt Data Scientist in
+the job title.
+
+```{r source sql file and substitute each new line "\n" with a space}
+# source sql file and substitute each new line "\n" with a space
+# filename <- getURL("https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Peter%20Folder/Sql/jobs_location.sql")
+filename <- "/Users/Audiorunner13/CUNY MSDS Course Work/DATA607 Spring 2021/Week7/Project3/Sql/jobs_location.sql"
+db_sql <- read_file(filename)
+db_sql <- gsub("\n", " ",db_sql)
+db_sql
+```
+
+Execute the sql query joining the fact table to the dimension tables and return all records in the result set.  Specify the number of records to return by adjusting the "n = " argument.
+
+```{r execute sql query and return result set}
+# execute sql query and return result set
+db_data = dbSendQuery(db_conn, db_sql)
+result_set = fetch(db_data, n = -1)
+```
+
+The result_set containing the extracted data is a data.frame.
+
+```{r display the class of the result set}
+# display the class of the result set
+class(result_set)
+```
+
+### Analysis
+
+```{r extract all job descriptions}
+# extract all job descriptions
+job_descr_phrases <- result_set$job_descr
+```
+
+```{r use the ngram to extract single word, double word phrases and calc the frequency}
+# use the ngram to extract single word, double word phrases and calc the frequency
+createNgram <- function(stringVector,ngramSize){
+  
+  ngram <- data.table()
+  ng <- textcnt(stringVector,method = "string", n = ngramSize, tolower=FALSE)
+  
+  if(ngramSize==1){
+#  ngram <- data.table(w1 = names(ng), freq = unclass(ng), length=nchar(names(ng)))
+    ngram <- data.table(w1 = names(ng), freq = unclass(ng))
+  }
+  else {
+#    ngram <- data.table(w1w2 = names(ng), freq = unclass(ng), length=nchar(names(ng)))
+    ngram <- data.table(w1w2 = names(ng), freq = unclass(ng))
+  }
+  return(ngram)
+}
+```
+
+```{r call the ngram function to extract all single word phrases from the job descriptions}
+# call the ngram function to extract all single word phrases from the job descriptions
+job_descr_text <- job_descr_phrases
+job_phrases_1 <- createNgram(job_descr_text,1)
+job_phrases_1$w1 <- tolower(job_phrases_1$w1)  # convert to lowercase for accurate counting
+names(job_phrases_1)
+job_phrases_1 <- job_phrases_1 %>% arrange(desc(freq))
+```
+
+```{r create a soft skills single word data.frame and agg for accurate counts}
+# create a soft skills data.frame and agg for accurate counts
+lookup_soft_skills <- c("professional", "veteran", "lead", "leadership", "leader", "innovation", "collaborative", "passionate", "creative", "motivated", "integrity", "effectiveness", "pioneering")
+soft_skills <- filter(job_phrases_1, w1 %in% lookup_soft_skills)
+soft_skills_tot <- aggregate.data.frame(x = soft_skills$freq,             # Sum by group
+          by = list(soft_skills$w1),
+          FUN = sum)
+```
+
+```{r rename soft skill df columns}
+# rename soft skill df columns
+soft_skills_tot <- soft_skills_tot %>% 
+   dplyr::rename("soft_skill" = Group.1, "count" = x)
+```
+
+```{r calc a percentage field and append to respective rows to soft skills df}
+# calc a prercentage field and append to repsective rows
+tot_count <- as.integer(sum(soft_skills_tot$count))
+skill_count_pct <- round(soft_skills_tot$count/tot_count, 3)
+(soft_skills_tot <- cbind(soft_skills_tot, skill_count_pct))
+```
+
+```{r plot the soft skills}
+# plot the soft skills
+soft_skills_tot %>%
+  ggplot(aes(y=reorder(soft_skill,count),x=count,fill=soft_skill)) +
+  geom_bar(stat = 'identity',position=position_dodge()) +
+  geom_text(aes(label=skill_count_pct), vjust=1.6, color="black", 
+            position = position_dodge(0.9), size=3.5) +
+  labs(y = ("Soft Skills"),x = ("Soft Skill Count"), 
+       title = ("Percentage of Soft Skill Found in Data Science Job Opps")) +
+  theme_minimal()
+```
+
+```{r create a technical skills single word data.frame and agg for accurate counts}
+# create a one technical skills data.frame and agg for accurate counts
+lookup_skills_1 <- c("python", "r", "sql", "hadoop", "spark", "tableau", "statistics", "analytics", "sas", "matlab", "bigml", "d3.js", "excel", "ggplot2","jupyter","nltk","scikit-learn","tensorflow","weka","matplotlib","predictive","analysis","ai","artificial","mathematics","c", "hive","aws","linux","nosql","azure","basic","bayesian","mapreduce")
+skills_mentioned <- filter(job_phrases_1, w1 %in% lookup_skills_1)
+tech_skills_1 <- aggregate.data.frame(x = skills_mentioned$freq,             # Sum by group
+          by = list(skills_mentioned$w1),
+          FUN = sum)
+```
+
+```{r call the ngram function to extract all double word phrases from the job descriptions}
+# call the ngram function to extract all double word phrases from the job descriptions
+job_descr_text <- job_descr_phrases
+job_phrases_2 <- createNgram(job_descr_text,2)
+job_phrases_2$w1w2 <- tolower(job_phrases_2$w1w2) 
+names(job_phrases_2)
+job_phrases_2 <- job_phrases_2 %>% arrange(desc(freq))
+```
+
+```{r create a technical skills double word data.frame and agg for accurate counts}
+# create a second of double word technical skills data.frame and agg for accurate counts
+lookup_skills_2 <- c("machine learning","articial intelligence","computer science", "data mining","data analysis","deep learning","predictive models","natural language", "decision making")
+skills_mentioned <- filter(job_phrases_2, w1w2 %in% lookup_skills_2)
+tech_skills_2 <- aggregate.data.frame(x = skills_mentioned$freq,             # Sum by group
+          by = list(skills_mentioned$w1),
+          FUN = sum)
+```
+
+```{r create a final tech skills df to hold all tech skills}
+# create a final tech skills df to hold all tech skills
+tech_skills_tot <- tech_skills_1
+```
+
+```{r append 2nd tech skills df to and rename the fields in the final tech skills df}
+tech_skills_tot <- rbind(tech_skills_tot,tech_skills_2) %>% 
+   dplyr::rename("tech_skill"=Group.1, "count"=x)
+```
+
+```{r calc a percentage field and append to respective rows to tech skills df}
+# calc a percentage field and append to respective rows to tech skills df
+tech_tot_count <- as.integer(sum(tech_skills_tot$count))
+tot_skill_count_pct <- round(tech_skills_tot$count/tech_tot_count, 3)
+tech_skills_tot <- cbind(tech_skills_tot, tot_skill_count_pct)
+```
+
+```{r filter those tech skills where the percentage is less than 0.020}
+# filter those tech skills where the percentage is less than 0.020
+(tech_skills_tot_10 <- tech_skills_tot %>% filter(tot_skill_count_pct >= 0.019))
+```
+
+```{r plot the top technical skills}
+# plot the top technical skills
+tech_skills_tot_10 %>%
+  ggplot(aes(y=reorder(tech_skill,count),x=count,fill=tech_skill)) +
+  geom_bar(stat = 'identity',position=position_dodge()) +
+  geom_text(aes(label=tot_skill_count_pct), vjust=1.6, color="black", 
+            position = position_dodge(0.9), size=3.5) +
+  labs(y = ("Technical Skills"),x = ("Technical Skill Count"), 
+       title = ("Percentage of Technical Skills Found in Data Science Job Opps")) +
+  theme_minimal()
+```
+
+##### Conclusion
