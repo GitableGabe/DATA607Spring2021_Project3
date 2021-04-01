@@ -341,25 +341,25 @@ view(res)
 # technical, hard and soft skills: https://zety.com/blog/data-scientist-resume-example
 # res1$w1 = tolower(res1s$w1) sets all words to lowercase
 
-#creating copy of the 1 word frequency table to find hard skills
-techskill = c("Python", "python", "R", "SQL", "sql", "Sql", "Spark", "spark", "Hadoop", "hadoop","java", "Java", "tableau", "Tableau", "AWS", "aws", "Aws", "SAS", "sas", "Hive", "hive", "TensorFlow", "Tensorflow", "tensorflow", "Scala", "scala", "C++", "c++", "Excel", "excel", "Azure", "azure")
+#creating copy of the 1 word frequency table to find hard / technical skills
+techskill = c("Python", "python", "R", "SQL", "sql", "Sql", "Spark", "spark", "Hadoop", "hadoop","java", "Java", "tableau", "Tableau", "AWS", "aws", "Aws", "SAS", "sas", "Hive", "hive", "TensorFlow", "Tensorflow", "tensorflow", "Scala", "scala", "C++", "c++", "Excel", "excel", "Azure", "azure", "Mathematics", "mathematics", "Statistics", "statistitcs", "programming", "Programming", "debugging", "Debugging", "Probability", "probability", "modeling", "Modeling", "Matplotlib", "matplotlib", "OpenRefine", "Openrefine", "openrefine")
 res1 <- res %>% 
   select(-3) %>% 
   filter(w1 %in% techskill)
 
 #recreating two term freq count hard skill/ technical
-hardskill= c()
+hardskill= c("Machine learning", "machine learning", "data visualization", "Data visualization", "Quantitative analysis", "quantitative analysis", "Data analysis", "data analysis")
 res2 <- createNgram(text,2)
 res2 <- res2 %>% 
   select(-3) %>% 
-  #filter(w1 %in% hardskill)
+  filter(w1w2 %in% hardskill)
+#view(res2)
 
 
 
 
 
-#typeof(df$col)
-#head(res2 %>% arrange(desc(freq)),40)
+# typeof()
 
 ```
 
