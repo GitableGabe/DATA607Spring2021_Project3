@@ -355,9 +355,17 @@ res2 <- res2 %>%
   filter(w1w2 %in% hardskill)
 #view(res2)
 
+softskill = c("Communication", "communication", "collaboration", "Collaboration", "preceptiveness", "Perceptiveness", "Preseptive", "perseptive", "Judgement", "judgement", "teamwork", "Teamwork")
+res3 <- createNgram(text,1)
+res3 <- res3 %>% 
+  select(-3) %>% 
+  filter(w1 %in% softskill)
 
-
-
+softskill2 = c("Critical Thinking", "Critical thinking", "critical thinking", "creative thinking", "Creative Thinking", "Creative thinking", "Problem Solving", "problem solving", "Problem solving", "interpersonal skills", "Interpersonal Skills", "Interpersonal skills", "generating hypothesis", "Generating Hypothesis", "Generating hypothesis", "Active listening", "Active Listening", "active listening", "active learning", "Active learning", "Active Learning")
+res4 <- createNgram(text,2)
+res4 <- res4 %>% 
+  select(-3) %>% 
+  filter(w1w2 %in% softskill2)
 
 # typeof()
 
