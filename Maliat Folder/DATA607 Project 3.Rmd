@@ -356,6 +356,21 @@ wordcloud(words =res$w1 , freq = res$freq, min.freq = 1,max.words=200, random.or
 wordcloud2(data=res, size = 0.7, shape = 'pentagon')
 ```
 
+```{r}
+head(res)
+```
+
+```{r}
+
+###avoiding with,the,and,of,in:
+
+allWords = as.data.frame(table(res$w1))
+
+wordsToAvoid = read.csv("https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Maliat%20Folder/avoidedwords.csv")
+
+finalWords = anti_join(allWords, wordsToAvoid,by="w1")
+```
+
 ##### Conclusion
 
 
