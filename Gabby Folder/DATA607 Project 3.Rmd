@@ -336,38 +336,61 @@ view(res)
 ```
 
 
-```{r GMsandbox_frontdoorapproach}
+```{r}
 # hard skills: https://towardsdatascience.com/the-most-in-demand-tech-skills-for-data-scientists-d716d10c191d
 # technical, hard and soft skills: https://zety.com/blog/data-scientist-resume-example
 # res1$w1 = tolower(res1s$w1) sets all words to lowercase
+job_descr_phrases <- result_set$job_descr
+job_descr_text <- job_descr_phrases
 
-#creating copy of the 1 word frequency table to find hard / technical skills
-techskill = c("Python", "python", "R", "SQL", "sql", "Sql", "Spark", "spark", "Hadoop", "hadoop","java", "Java", "tableau", "Tableau", "AWS", "aws", "Aws", "SAS", "sas", "Hive", "hive", "TensorFlow", "Tensorflow", "tensorflow", "Scala", "scala", "C++", "c++", "Excel", "excel", "Azure", "azure", "Mathematics", "mathematics", "Statistics", "statistitcs", "programming", "Programming", "debugging", "Debugging", "Probability", "probability", "modeling", "Modeling", "Matplotlib", "matplotlib", "OpenRefine", "Openrefine", "openrefine")
-res1 <- res %>% 
+##### HARD and TECH Skills, both 1 word and 2 word hard and tech skills are together
+####should we split up hard skills VS tech skills?
+job_phrases_1 <- createNgram(job_descr_text,1)
+job_phrases_1$w1 <- tolower(job_phrases_1$w1) # convert to lowercase for accurate counting
+techskill = c("Python", "python", "R", "r", "SQL", "sql", "Sql", "Spark", "spark", "Hadoop", "hadoop","java", "Java", "tableau", "Tableau", "AWS", "aws", "Aws", "SAS", "sas","Sas", "Hive", "hive", "TensorFlow", "Tensorflow", "tensorflow", "Scala", "scala", "C++", "c++", "Excel", "excel", "Azure", "azure", "Mathematics", "mathematics", "Statistics", "statistitcs", "programming", "Programming", "debugging", "Debugging", "Probability", "probability", "modeling", "Modeling", "Matplotlib", "matplotlib", "OpenRefine", "Openrefine", "openrefine")
+job_phrases_1<- job_phrases_1 %>% 
   select(-3) %>% 
-  filter(w1 %in% techskill)
+  filter(w1 %in% techskill) %>% 
+  group_by(w1) %>% 
+  summarise_all(funs(sum)) %>% 
+  arrange(desc(freq))
+view(job_phrases_1)
+  
 
-#recreating two term freq count hard skill/ technical
-hardskill= c("Machine learning", "machine learning", "data visualization", "Data visualization", "Quantitative analysis", "quantitative analysis", "Data analysis", "data analysis")
-res2 <- createNgram(text,2)
-res2 <- res2 %>% 
+job_phrases_2 <- createNgram(job_descr_text,2)
+job_phrases_2$w1w2 <- tolower(job_phrases_2$w1w2)
+hardskill= c("Machine learning", "machine learning", "data visualization", "Data visualization", "Quantitative analysis", "quantitative analysis", "Data analysis", "data analysis", "artificial intelligence", "Artificial intelligence", "Artificial Intelligence")
+job_phrases_2<- job_phrases_2 %>% 
   select(-3) %>% 
-  filter(w1w2 %in% hardskill)
-#view(res2)
+  filter(w1w2 %in% hardskill) %>% 
+  group_by(w1w2) %>% 
+  summarise_all(funs(sum))%>% 
+  arrange(desc(freq))
+view(job_phrases_2)
 
-softskill = c("Communication", "communication", "collaboration", "Collaboration", "preceptiveness", "Perceptiveness", "Preseptive", "perseptive", "Judgement", "judgement", "teamwork", "Teamwork")
-res3 <- createNgram(text,1)
-res3 <- res3 %>% 
+###### All Soft Skills
+job_phrases_3 <- createNgram(job_descr_text,1)
+job_phrases_3$w1 <- tolower(job_phrases_3$w1) 
+softskill = c("Communication", "communication", "collaboration", "Collaboration", "preceptiveness", "Perceptiveness", "Preseptive", "perseptive", "Judgement", "judgement", "teamwork", "Teamwork", "collaborate", "Collaborate")
+job_phrases_3<- job_phrases_3 %>% 
   select(-3) %>% 
-  filter(w1 %in% softskill)
+  filter(w1 %in% softskill) %>% 
+  group_by(w1) %>% 
+  summarise_all(funs(sum)) %>% 
+  arrange(desc(freq))
+view(job_phrases_3)
 
-softskill2 = c("Critical Thinking", "Critical thinking", "critical thinking", "creative thinking", "Creative Thinking", "Creative thinking", "Problem Solving", "problem solving", "Problem solving", "interpersonal skills", "Interpersonal Skills", "Interpersonal skills", "generating hypothesis", "Generating Hypothesis", "Generating hypothesis", "Active listening", "Active Listening", "active listening", "active learning", "Active learning", "Active Learning")
-res4 <- createNgram(text,2)
-res4 <- res4 %>% 
+job_phrases_4 <- createNgram(job_descr_text,2)
+job_phrases_4$w1w2 <- tolower(job_phrases_4$w1w2)
+softskill2 = c("Critical Thinking", "Critical thinking", "critical thinking", "creative thinking", "Creative Thinking", "Creative thinking", "Problem Solving", "problem solving", "Problem solving", "interpersonal skills", "Interpersonal Skills", "Interpersonal skills", "generating hypothesis", "Generating Hypothesis", "Generating hypothesis", "Generate hypothesis", "Generate Hypothesis", "generate hypothesis", "Active listening", "Active Listening", "active listening", "active learning", "Active learning", "Active Learning")
+job_phrases_4<- job_phrases_4 %>% 
   select(-3) %>% 
-  filter(w1w2 %in% softskill2)
+  filter(w1w2 %in% softskill2) %>% 
+  group_by(w1w2) %>% 
+  summarise_all(funs(sum)) %>% 
+  arrange(desc(freq))
+view(job_phrases_4)
 
-# typeof()
 
 ```
 
