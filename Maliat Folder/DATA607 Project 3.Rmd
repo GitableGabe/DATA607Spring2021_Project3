@@ -1,6 +1,6 @@
 ---
 title: "DATA607 Project 3 – Data Science Skills"
-author: "Joe Connolly, Gabriel Campos, Gabriella Martinez and Peter Gatica"
+author: "Joe Connolly, Gabriel Campos, Gabriella Martinez,Maliat Islam and Peter Gatica"
 date: "`r format(Sys.Date(), '%B %d %Y')`"
 output:
   html_document:
@@ -328,6 +328,32 @@ head(res %>% arrange(desc(freq)),40)
 ```{r}
 res <- res %>%
   arrange(desc(freq))
+```
+
+```{r}
+res[res$w1=="machine",]
+res[res$w1=="master",]
+res[res$w1=="bachelor",]
+res[res$w1=="artificial",]
+### Job searchers who have master's degree may have a better opportunity to get a job in the field of data analysis.
+
+```
+
+```{r}
+##wordcloud
+
+library(wordcloud)
+library(RColorBrewer)
+library(wordcloud2)
+```
+
+```{r}
+set.seed(1234) # for reproducibility 
+wordcloud(words =res$w1 , freq = res$freq, min.freq = 1,max.words=200, random.order=FALSE, rot.per=0.35, colors=brewer.pal(8, "Dark2"))
+```
+
+```{r}
+wordcloud2(data=res, size = 0.7, shape = 'pentagon')
 ```
 
 ##### Conclusion
