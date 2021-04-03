@@ -1,0 +1,393 @@
+---
+title: "practice project 3"
+author: "Maliat Islam"
+date: "4/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+title: "DATA607 Project 3 – Data Science Skills"
+author: "Joe Connolly, Gabriel Campos, Gabriella Martinez and Peter Gatica"
+date: "`r format(Sys.Date(), '%B %d %Y')`"
+output:
+  html_document:
+    includes:
+      in_header: header.html
+    css: ./lab.css
+    highlight: pygments
+    theme: darkly
+    toc: true
+    toc_float: true
+  prettydoc::html_pretty:
+    theme: cayman
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+<!--match.arg(theme, themes()) : 
+    'arg' should be one of "default", "cerulean", "journal","flatly",
+    "darkly", "readable", "spacelab", "united", "cosmo", "lumen", "paper", 
+    "sandstone", "simplex", "yeti"  -------->
+
+```{r, echo=FALSE,warning=FALSE, results='hide', include=FALSE}
+library(devtools)
+library(tidyverse)
+library(RCurl)
+library(plyr)
+library(knitr)
+library(RMySQL)
+library(DSI)
+library(odbc)
+library(stringr)
+library(tau)
+library(data.table)
+```
+
+<!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
+
+### Project 3 {.tabset .tabset-pills}
+
+
+
+#### Assignment Requirements{.tabset}
+
+
+This is a project for your entire class section to work on together, since being able to work effectively on a virtual team is a key *“soft skill”* for data scientists. 
+
+Please **note especially** the **requirement** about making a **presentation** during our first meetup after the project is due.
+
+        W. Edwards Deming said, “In God we trust, all others must bring data.” 
+
+**Please use data to answer the question:**
+
+        “Which are the most valued data science skills?”
+
+Consider your work as an exploration:
+there is **not** necessarily a *“right answer.”*
+
+#### Grading rubric
+
+* You will need to determine what **tool(s)** you’ll use as a group to effectively collaborate, **share code** and any **project documentation** *(such as motivation, approach, findings).*
+* You will have to determine **what data** to collect, **where the data** can be found, and **how to load** it.
+* The data that you decide to collect should reside in a **relational database**, in a set of **normalized tables**.
+* You should perform any needed **tidying**, **transformations**, and **exploratory data analysis** in `R`.
+* Your deliverable should include all **code**, **results**, and **documentation** of your motivation, approach, and findings.
+* As a group, you should appoint $(at\ least)$ *three people* to **lead parts** of the presentation.
+* While you are strongly encouraged (and will hopefully find it fun) to try out statistics and data models, your **grade will NOT be affected by the statistical analysis and modeling performed** (since this is a semester one course on Data Acquisition and Management).
+* **Every** student must be prepared to **explain how the data** was **collected**, **loaded**, **transformed**, **tidied**, and **analyzed for outliers**, etc. in our *Meetup*.
+    + This is the **only way I’ll have to determine that everyone actively participated in the process, so you need to hold yourself responsible for understanding what your class-size team did!*
+* If you are **unable to attend the meet up**, then you need to either **present to me one-on-one before the meetup presentation**, or **post a 3 to 5 minute video (e.g. on YouTube) explaining the process**.
+    + Individual students will not be responsible for explaining any forays into statistical analysis, modeling, data mining, regression, decision trees, etc.
+    + You are encouraged to start early, ask many questions, actively post on the provided discussion forum, etc.
+
+
+#### Notes
+
+1. 
+2. 
+3. 
+4. 
+
+
+
+
+
+### Database Import {.tabset .tabset-pills}
+
+#### Connect to local Database 
+
+Database `job` is created on each team members local machine using MySQL. Using an **Open Data Base Connectivity (ODBC)** Driver. A connection is established using the **Data Source Name (DSN)** linking `R` to the appropriate user with `SELECT` and `INSERT` privileges. 
+
+```{r MySQL Connect Function}
+  db_conn <- dbConnect(odbc(),"data607")
+    dbListTables(db_conn)
+```
+
+```{r List the fields in the location dimension database table}
+# table location_dim fields are listed below
+dbListFields(db_conn, "location_dim")
+dbListFields(db_conn, "job_opening_tbl")
+```
+
+#### Load CSV
+
+Function `OD_DL_csv` is created in order to access the necessary `CSV` files containing over 30,000 observations. This method of was select over loading from Github, do to storage limitations with files this large. shared file URL and csv names are stored into variables `url_location`, `url_job_openings`, `csv_location` and `csv_openings` respectively. 
+
+```{r}
+OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
+   # Save the shared url 
+   URL1 <- unlist(strsplit(sharedURL,"[?]"))[1]
+   URL1 <- paste0(URL1,"?download=1") # edit URL to make it a downloadable link
+   
+   # Download the file to a temp directory using the supplied file name
+   curl::curl_download(
+      URL1,
+      destfile = file.path(tempdir(), file_name),
+      mode = "wb"
+      )
+   # If the user wants it saved to thier working directory this will copy the file
+   if(isTRUE(save2wd)){
+      file.copy(
+         from = paste0(tempdir(),"\\", file_name),
+         to = "./")
+      }
+   # return the CSV as a data.frame
+   return(read.csv(paste0(tempdir(), "\\" ,file_name), stringsAsFactors = FALSE))
+}
+```
+
+```{r}
+url_Cleaned_DS <- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EdcuUpO6t1RIqyHw-OP90UQB2qRYY3fcW5RPyA_xT348Qw?e=4HeXbe"
+url_DS_job_market<- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/Eai1ECgMhthLmrut-eIdD5oBw4715IvolGgyG54owY0nWg?e=D0iRKm"
+url_location<-
+   "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EYAX_5NCc_hFtSUFY0W4NPMBEXiRYtgro4V3vrSJbpTcag?e=aRKrpf"
+url_job_openings<-
+   "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EWni58F8o9BKqLwvF-FDdIEBX7nGv3l7PeueVkrUEPhJ_A?e=9hOyGN"
+csv_locations<-
+   "job_locations.csv"
+csv_job_openings<-
+   "job_openings.csv"
+csv_DS_job_market <-
+  "alldata.csv"
+csv_Cleaned_DS<- "Cleaned_DS_Jobs.csv"
+```
+
+Calling the `OD_DL_csv()` function the csv files are loaded to `location_dim_df` and `job_opening_df`
+
+```{r Source the location dimension file to load}
+location_dim_df <- OD_DL_csv(sharedURL = url_location,
+          file_name = csv_locations
+          )
+```
+
+```{r Source the job Openings file to load}
+job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
+          file_name = csv_job_openings
+          )
+```
+
+```{r Source the job Openings file to load 2}
+# additional un tidy data set
+DS_job_df <- OD_DL_csv(sharedURL = url_DS_job_market,
+          file_name = csv_DS_job_market
+          )
+```
+
+### Manipulating Imported CSV Dataset
+
+```{r, results='hide'}
+# to filter 30,000 rows in rmd and lighten the load to MySQL
+job_opening_df <- job_opening_df %>%
+  filter(grepl('Data',job_title))
+```
+
+```{r, results='hide'}
+# to filter 30,000 rows in rmd and lighten the load to MySQL
+location_dim_df <- location_dim_df %>%
+  filter(uniq_id %in% job_opening_df$uniq_id)
+```
+
+
+```{r}
+job_opening_df$job_descr <- gsub("<[^>]+>","",job_opening_df$job_descr)
+```
+
+
+```{r}
+# add unique ID column based on row name of each entry
+DS_job_df<-cbind( data.frame("uniq_id" = as.integer(rownames(DS_job_df))), DS_job_df)
+# add 40K to each uniq_id to ensure none match the first 30K entries of the other sets
+DS_job_df<-DS_job_df %>%
+  mutate_at( vars("uniq_id") ,
+             funs(.+40000))
+```
+
+
+
+
+```{r, results=FALSE}
+# splitting up the location column to create state, city, zip_code
+temp<-as.data.frame(str_split_fixed(DS_job_df$location,",",2))
+temp$V2<-str_trim(temp$V2)
+temp$V2<-str_replace_all(temp$V2, "\\s", " == ")
+DS_job_df<-(temp<-cbind(DS_job_df,"city" = temp$V1,
+            as.data.frame(str_split_fixed(temp$V2,"==",2)))%>%
+                                              dplyr::rename("state"=V1, "zip_code"=V2))
+# loading country column with a constan "United State" value
+DS_job_df$country<-"United States"
+# quick rearrange
+DS_job_df<-DS_job_df %>%
+  select(uniq_id,position,description,location,city,state,country,zip_code,company,reviews)
+```
+
+
+
+
+
+
+```{r}
+job_opening_df <-rbind(DS_job_df %>% 
+                         select(1,2,3) %>%
+                            dplyr::rename( "uniq_id" = `uniq_id`,
+                            "job_title" = `position`,
+                            "job_descr" = `description`)
+                      ,job_opening_df)
+```
+
+
+```{r}
+location_dim_df <-rbind(DS_job_df %>% 
+                         select(1,4,5,6,7,8),location_dim_df)
+```
+
+#### Write to Database
+
+Using [dbWriteTable](https://dbi.r-dbi.org/reference/dbwritetable) function, we are able to write these imported dataframes into the appropriate Database tables on our local Database.
+
+```{r Append new records to location dimension, result = 'hold'}
+#dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "location_dim", value = location_dim_df, append = TRUE,row.names = FALSE)
+```
+
+```{r append new records to the job opening table}
+#dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "job_opening_tbl", value = job_opening_df, append = TRUE, row.names = FALSE)
+```
+
+An [SQL in the Project 3 Repo](https://github.com/gcampos100/DATA607_CUNY_2021_Project3/tree/main/Gabe%20Folder) is used, to retreive the merged data, filtered by job titles, containg the word $DATA$.
+
+```{r, echo=FALSE}
+filename <-"https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Gabe%20Folder/jobs_location.sql"
+```
+
+
+```{r source sql file and substitute each new line "\n" with a space}
+filename <-"https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Gabe%20Folder/jobs_location.sql"
+db_sql <- read_file(filename)
+db_sql <- gsub("\n", " ",db_sql)
+db_sql
+```
+
+```{r execute sql query and return result set}
+result_set = dbGetQuery(db_conn, db_sql)
+#result_set = fetch(db_data, n = -1)
+head(result_set,5)
+```
+
+```{r display the class of the result set}
+class(result_set)
+```
+
+```{r}
+#job_opening_df %>% mutate_at( vars( matches("job_desc")) ,~str_view( . ,"<.*.>") )
+```
+
+### Analysis
+
+```{r}
+phrases <- result_set$job_descr
+#view(phrases)
+createNgram <-function(stringVector, ngramSize){
+  ngram <- data.table()
+  ng <- textcnt(stringVector, method = "string", n=ngramSize, tolower = FALSE)
+  if(ngramSize==1){
+    ngram <- data.table(w1 = names(ng), freq = unclass(ng), length=nchar(names(ng)))  
+  }
+  else {
+    ngram <- data.table(w1w2 = names(ng), freq = unclass(ng), length=nchar(names(ng)))
+  }
+  return(ngram)
+}
+```
+
+```{r}
+text <- phrases
+res <- createNgram(text,1)
+names(res)
+head(res %>% arrange(desc(freq)),40)
+```
+
+
+
+```{r}
+res <- res %>%
+  arrange(desc(freq))
+view(res)
+```
+
+
+```{r}
+# hard skills: https://towardsdatascience.com/the-most-in-demand-tech-skills-for-data-scientists-d716d10c191d
+# technical, hard and soft skills: https://zety.com/blog/data-scientist-resume-example
+# res1$w1 = tolower(res1s$w1) sets all words to lowercase
+job_descr_phrases <- result_set$job_descr
+job_descr_text <- job_descr_phrases
+##### HARD and TECH Skills, both 1 word and 2 word hard and tech skills are together
+####should we split up hard skills VS tech skills?
+job_phrases_1 <- createNgram(job_descr_text,1)
+job_phrases_1$w1 <- tolower(job_phrases_1$w1) # convert to lowercase for accurate counting
+techskill = c("Python", "python", "R", "r", "SQL", "sql", "Sql", "Spark", "spark", "Hadoop", "hadoop","java", "Java", "tableau", "Tableau", "AWS", "aws", "Aws", "SAS", "sas","Sas", "Hive", "hive", "TensorFlow", "Tensorflow", "tensorflow", "Scala", "scala", "C++", "c++", "Excel", "excel", "Azure", "azure", "Mathematics", "mathematics", "Statistics", "statistitcs", "programming", "Programming", "debugging", "Debugging", "Probability", "probability", "modeling", "Modeling", "Matplotlib", "matplotlib", "OpenRefine", "Openrefine", "openrefine", "python", "r", "sql", "hadoop", "spark", "tableau", "statistics", "sas", "matlab", "bigml", "d3.js", "excel", "ggplot2","jupyter","nltk","scikit-learn","tensorflow","weka","matplotlib","predictive","ai","mathematics","c", "hive","aws","linux","nosql","azure","basic","bayesian","mapreduce")
+job_phrases_1<- job_phrases_1 %>% 
+  select(-3) %>% 
+  filter(w1 %in% techskill) %>% 
+  group_by(w1) %>% 
+  summarise_all(funs(sum)) %>% 
+  arrange(desc(freq))
+colnames(job_phrases_1)[1] <- "Hard and Tech Skills"
+view(job_phrases_1)
+  
+job_phrases_2 <- createNgram(job_descr_text,2)
+job_phrases_2$w1w2 <- tolower(job_phrases_2$w1w2)
+hardskill= c("Machine learning", "machine learning", "data visualization", "Data visualization", "Quantitative analysis", "quantitative analysis", "Data analysis", "data analysis", "artificial intelligence", "Artificial intelligence", "Artificial Intelligence", "predictive analysis")
+job_phrases_2<- job_phrases_2 %>% 
+  select(-3) %>% 
+  filter(w1w2 %in% hardskill) %>% 
+  group_by(w1w2) %>% 
+  summarise_all(funs(sum))%>% 
+  arrange(desc(freq))
+colnames(job_phrases_2)[1] <- "Hard and Tech Skills"
+#view(job_phrases_2)
+totaltech <- rbind(job_phrases_1, job_phrases_2) %>% 
+  arrange(desc(freq))
+view(totaltech)
+###### All Soft Skills
+job_phrases_3 <- createNgram(job_descr_text,1)
+job_phrases_3$w1 <- tolower(job_phrases_3$w1) 
+softskill = c("Communication", "communication", "collaboration", "Collaboration", "preceptiveness", "Perceptiveness", "Preseptive", "perseptive", "Judgement", "judgement", "teamwork", "Teamwork", "collaborate", "Collaborate", "professional", "veteran", "lead", "leadership", "leader", "innovation", "innovate", "innovative", "collaborative", "passionate", "creative", "motivated", "integrity", "effectiveness", "pioneering","communication", "collaboration", "preceptiveness", "perseptive","teamwork","collaborate")
+job_phrases_3<- job_phrases_3 %>% 
+  select(-3) %>% 
+  filter(w1 %in% softskill) %>% 
+  group_by(w1) %>% 
+  summarise_all(funs(sum)) %>% 
+  arrange(desc(freq))
+colnames(job_phrases_3)[1] <- "Soft Skills"
+#view(job_phrases_3)
+job_phrases_4 <- createNgram(job_descr_text,2)
+job_phrases_4$w1w2 <- tolower(job_phrases_4$w1w2)
+softskill2 = c("Critical Thinking", "Critical thinking", "critical thinking", "creative thinking", "Creative Thinking", "Creative thinking", "Problem Solving", "problem solving", "Problem solving", "interpersonal skills", "Interpersonal Skills", "Interpersonal skills", "generating hypothesis", "Generating Hypothesis", "Generating hypothesis", "Generate hypothesis", "Generate Hypothesis", "generate hypothesis", "Active listening", "Active Listening", "active listening", "active learning", "Active learning", "Active Learning")
+job_phrases_4<- job_phrases_4 %>% 
+  select(-3) %>% 
+  filter(w1w2 %in% softskill2) %>% 
+  group_by(w1w2) %>% 
+  summarise_all(funs(sum)) %>% 
+  arrange(desc(freq))
+colnames(job_phrases_4)[1] <- "Soft Skills"
+#view(job_phrases_4)
+totalsoft <- rbind(job_phrases_3, job_phrases_4) %>% 
+  arrange(desc(freq))
+view(totalsoft)
+```
+
+##### Conclusion
+
+
+<!------- Below is for removing excessive space in Rmarkdown | HTML formatting -------->
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
