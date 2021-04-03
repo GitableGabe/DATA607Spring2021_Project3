@@ -18,6 +18,7 @@ editor_options:
   chunk_output_type: console
 ---
 
+<!-----Maliat'copy----->
 
 <!--match.arg(theme, themes()) : 
     'arg' should be one of "default", "cerulean", "journal","flatly",
@@ -36,6 +37,9 @@ library(odbc)
 library(stringr)
 library(tau)
 library(data.table)
+library(wordcloud)
+library(RColorBrewer)
+library(wordcloud2)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
@@ -339,15 +343,7 @@ res[res$w1=="artificial",]
 
 ```
 
-```{r}
-##wordcloud
-
-library(wordcloud)
-library(RColorBrewer)
-library(wordcloud2)
-```
-
-
+#### Hard and Tech Skills
 ```{r}
 # hard skills: https://towardsdatascience.com/the-most-in-demand-tech-skills-for-data-scientists-d716d10c191d
 # technical, hard and soft skills: https://zety.com/blog/data-scientist-resume-example
