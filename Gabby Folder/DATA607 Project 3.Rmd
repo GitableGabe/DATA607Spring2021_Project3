@@ -335,7 +335,7 @@ view(res)
 
 ```
 
-
+#### Hard and Tech Skills
 ```{r}
 # hard skills: https://towardsdatascience.com/the-most-in-demand-tech-skills-for-data-scientists-d716d10c191d
 # technical, hard and soft skills: https://zety.com/blog/data-scientist-resume-example
@@ -343,10 +343,10 @@ view(res)
 job_descr_phrases <- result_set$job_descr
 job_descr_text <- job_descr_phrases
 
-##### HARD and TECH Skills
+# hard and tech skills single word skills
 job_phrases_1 <- createNgram(job_descr_text,1)
 job_phrases_1$w1 <- tolower(job_phrases_1$w1) # convert to lowercase for accurate counting
-techskill = c("Python", "python", "R", "r", "SQL", "sql", "Sql", "Spark", "spark", "Hadoop", "hadoop","java", "Java", "tableau", "Tableau", "AWS", "aws", "Aws", "SAS", "sas","Sas", "Hive", "hive", "TensorFlow", "Tensorflow", "tensorflow", "Scala", "scala", "C++", "c++", "Excel", "excel", "Azure", "azure", "Mathematics", "mathematics", "Statistics", "statistitcs", "programming", "Programming", "debugging", "Debugging", "Probability", "probability", "modeling", "Modeling", "Matplotlib", "matplotlib", "OpenRefine", "Openrefine", "openrefine", "python", "r", "sql", "hadoop", "spark", "tableau", "statistics", "sas", "matlab", "bigml", "d3.js", "excel", "ggplot2","jupyter","nltk","scikit-learn","tensorflow","weka","matplotlib","predictive","ai","mathematics","c", "hive","aws","linux","nosql","azure","basic","bayesian","mapreduce")
+techskill = c("python", "R", "r","sql",  "spark",  "hadoop","java", "tableau", "aws", "sas", "hive",  "tensorflow", "scala", "c++", "excel", "azure", "mathematics", "statistitcs", "programming",  "debugging",  "probability", "modeling", "matplotlib", "openrefine", "matlab", "bigml", "d3.js", "excel","ggplot2","jupyter","nltk","scikit-learn","tensorflow","weka","predictive","ai","mathematics","c", "linux","nosql","basic","bayesian","mapreduce")
 job_phrases_1<- job_phrases_1 %>% 
   select(-3) %>% 
   filter(w1 %in% techskill) %>% 
@@ -354,11 +354,11 @@ job_phrases_1<- job_phrases_1 %>%
   summarise_all(funs(sum)) %>% 
   arrange(desc(freq))
 colnames(job_phrases_1)[1] <- "Hard and Tech Skills"
-view(job_phrases_1)
-  
+
+#hard and tech double word skills
 job_phrases_2 <- createNgram(job_descr_text,2)
 job_phrases_2$w1w2 <- tolower(job_phrases_2$w1w2)
-hardskill= c("Machine learning", "machine learning", "data visualization", "Data visualization", "Quantitative analysis", "quantitative analysis", "Data analysis", "data analysis", "artificial intelligence", "Artificial intelligence", "Artificial Intelligence", "predictive analysis")
+hardskill= c("data visualization", "quantitative analysis", "data analysis", "artificial intelligence", "predictive analysis", "predictive modeling", "bachelors degree", "masters degree")
 job_phrases_2<- job_phrases_2 %>% 
   select(-3) %>% 
   filter(w1w2 %in% hardskill) %>% 
@@ -366,19 +366,29 @@ job_phrases_2<- job_phrases_2 %>%
   summarise_all(funs(sum))%>% 
   arrange(desc(freq))
 colnames(job_phrases_2)[1] <- "Hard and Tech Skills"
-#view(job_phrases_2)
+
+#combine the single word and two word skills into one dataframe
 totaltech <- rbind(job_phrases_1, job_phrases_2) %>% 
   arrange(desc(freq))
 view(totaltech)
+
+#bar graph top 20 hard and tech skills
+totaltech %>% 
+  top_n(20) %>% 
+  ggplot(aes(fct_reorder(`Hard and Tech Skills`,`freq`), `freq`))+
+  geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
+  coord_flip() +
+  xlab("") +
+  ylab("Frequency")
 ```
 
 
-
+#### Soft Skills
 ```{r}
-##All Soft Skills
+#soft skills single word
 job_phrases_3 <- createNgram(job_descr_text,1)
 job_phrases_3$w1 <- tolower(job_phrases_3$w1) 
-softskill = c("communication", "collaboration","preceptiveness", "perseptive","judgement", "teamwork", "collaborate", "professional", "veteran", "lead", "leadership", "leader", "innovation", "innovate", "innovative", "collaborative", "passionate", "creative", "motivated", "integrity", "effectiveness", "pioneering","communication", "collaboration", "preceptiveness", "perseptive","teamwork","collaborate")
+softskill = c("communication", "collaboration","teamwork", "collaborate", "professional", "veteran", "lead", "leadership", "leader", "innovation", "innovate", "innovative", "collaborative", "passionate", "creative", "motivated", "integrity", "effectiveness", "pioneering","communication", "collaboration", "preceptiveness", "perseptive","teamwork","collaborate",)
 job_phrases_3<- job_phrases_3 %>% 
   select(-3) %>% 
   filter(w1 %in% softskill) %>% 
@@ -386,11 +396,11 @@ job_phrases_3<- job_phrases_3 %>%
   summarise_all(funs(sum)) %>% 
   arrange(desc(freq))
 colnames(job_phrases_3)[1] <- "Soft Skills"
-#view(job_phrases_3)
 
+#soft skills double word
 job_phrases_4 <- createNgram(job_descr_text,2)
 job_phrases_4$w1w2 <- tolower(job_phrases_4$w1w2)
-softskill2 = c("critical thinking", "problem solving","interpersonal skills", "time management")
+softskill2 = c("critical thinking", "problem solving","interpersonal skills", "time management",)
 job_phrases_4<- job_phrases_4 %>% 
   select(-3) %>% 
   filter(w1w2 %in% softskill2) %>% 
@@ -398,20 +408,23 @@ job_phrases_4<- job_phrases_4 %>%
   summarise_all(funs(sum)) %>% 
   arrange(desc(freq))
 colnames(job_phrases_4)[1] <- "Soft Skills"
-#view(job_phrases_4)
 
+#combine the single word and two word skills into one dataframe
 totalsoft <- rbind(job_phrases_3, job_phrases_4) %>% 
   arrange(desc(freq))
+totalsoft<-totalsoft[-c(2,10), ]
+totalsoft[7,2] = (302+158+141)
+totalsoft<- arrange(totalsoft,desc(freq))
 view(totalsoft)
 
-
-
+#bar graph top 10 soft skills
 totalsoft %>% 
   top_n(10) %>% 
   ggplot(aes(fct_reorder(`Soft Skills`,`freq`), `freq`))+
   geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
   coord_flip() +
-  xlab("") 
+  xlab("") +
+  ylab("Frequency")
 ```
 
 ```{r}
