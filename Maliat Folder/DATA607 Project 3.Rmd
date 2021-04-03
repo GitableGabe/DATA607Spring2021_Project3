@@ -347,28 +347,112 @@ library(RColorBrewer)
 library(wordcloud2)
 ```
 
+
+```{r}
+# hard skills: https://towardsdatascience.com/the-most-in-demand-tech-skills-for-data-scientists-d716d10c191d
+# technical, hard and soft skills: https://zety.com/blog/data-scientist-resume-example
+# res1$w1 = tolower(res1s$w1) sets all words to lowercase
+#creating copy of the 1 word frequency table to find hard / technical skills
+techskill = c("Python", "python", "R", "SQL", "sql", "Sql", "Spark", "spark", "Hadoop", "hadoop","java", "Java", "tableau", "Tableau", "AWS", "aws", "Aws", "SAS", "sas", "Hive", "hive", "TensorFlow", "Tensorflow", "tensorflow", "Scala", "scala", "C++", "c++", "Excel", "excel", "Azure", "azure", "Mathematics", "mathematics", "Statistics", "statistitcs", "programming", "Programming", "debugging", "Debugging", "Probability", "probability", "modeling", "Modeling", "Matplotlib", "matplotlib", "OpenRefine", "Openrefine", "openrefine")
+res1 <- res %>% 
+  select(-3) %>% 
+  filter(w1 %in% techskill)
+#recreating two term freq count hard skill/ technical
+hardskill= c("Machine learning", "machine learning", "data visualization", "Data visualization", "Quantitative analysis", "quantitative analysis", "Data analysis", "data analysis")
+res2 <- createNgram(text,2)
+res2 <- res2 %>% 
+  select(-3) %>% 
+  filter(w1w2 %in% hardskill)
+#view(res2)
+softskill = c("Communication", "communication", "collaboration", "Collaboration", "preceptiveness", "Perceptiveness", "Preseptive", "perseptive", "Judgement", "judgement", "teamwork", "Teamwork")
+res3 <- createNgram(text,1)
+res3 <- res3 %>% 
+  select(-3) %>% 
+  filter(w1 %in% softskill)
+softskill2 = c("Critical Thinking", "Critical thinking", "critical thinking", "creative thinking", "Creative Thinking", "Creative thinking", "Problem Solving", "problem solving", "Problem solving", "interpersonal skills", "Interpersonal Skills", "Interpersonal skills", "generating hypothesis", "Generating Hypothesis", "Generating hypothesis", "Active listening", "Active Listening", "active listening", "active learning", "Active learning", "Active Learning")
+res4 <- createNgram(text,2)
+res4 <- res4 %>% 
+  select(-3) %>% 
+  filter(w1w2 %in% softskill2)
+```
+
+
+
+
+
+
+```{r}
+#unnecessary_words = c("and","to","the","with","of","or","The","from","our")
+#gsub(paste0(unnecessary_words,collapse = "|"),"", res$w1)
+#res$w1 <- gsub(paste0(unnecessary_words,collapse = "|"),"",res$w1)
+
+```
+
 ```{r}
 set.seed(1234) # for reproducibility 
-wordcloud(words =res$w1 , freq = res$freq, min.freq = 1,max.words=200, random.order=FALSE, rot.per=0.35, colors=brewer.pal(8, "Dark2"))
+wordcloud(words =totaltech$`Hard and Tech Skills` , freq = totaltech$freq, min.freq = 1,max.words=200, random.order=FALSE, rot.per=0.35, colors=brewer.pal(8, "Dark2"))
+```
+
+
+Random Forest
+```{r}
+library(caTools)
+set.seed(100)
+split = sample.split(totaltech$`Hard and Tech Skills`, SplitRatio = 0.7)
+trainSparse = subset(totaltech, split==TRUE)
+testSparse = subset(totaltech, split==FALSE)
 ```
 
 ```{r}
-wordcloud2(data=res, size = 0.7, shape = 'pentagon')
+library(randomForest)
+set.seed(100)
+trainSparse$`Hard and Tech Skills` = as.factor(trainSparse$`Hard and Tech Skills`)
+testSparse$`Hard and Tech Skills` = as.factor(testSparse$`Hard and Tech Skills` )
+ 
+#Lines 5 to 7
+RF_model = randomForest(`Hard and Tech Skills` ~ ., data=trainSparse)
+predictRF = predict(RF_model, newdata=testSparse)
+table(testSparse$`Hard and Tech Skills`, predictRF)
 ```
 
 ```{r}
-head(res)
+predictRF
 ```
 
 ```{r}
+ randomForest(formula = `Hard and Tech Skills` ~ ., data = trainSparse ,ntree=100,mtry=2, importance = TRUE) 
+```
 
-###avoiding with,the,and,of,in:
+```{r}
+#train the model using naive bayes
 
-allWords = as.data.frame(table(res$w1))
+library(e1071)
+sms_classifier <- naiveBayes(trainSparse,trainSparse$`Hard and Tech Skills` )
+sms_pred <- predict(sms_classifier,testSparse )
+```
 
-wordsToAvoid = read.csv("https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Maliat%20Folder/avoidedwords.csv")
 
-finalWords = anti_join(allWords, wordsToAvoid,by="w1")
+
+```{r}
+## naive bayes
+install.packages("gmodels")
+library(gmodels)
+CrossTable(sms_pred, testSparse$`Hard and Tech Skills`, prop.chisq = FALSE, chisq = FALSE, 
+           prop.t = FALSE,
+           dnn = c("Predicted", "Actual"))
+```
+
+```{r}
+##naive bayes
+sms_pred
+```
+
+```{r}
+##treemap
+library(treemap)
+ treemap(totaltech,index =c("python","statistics","sql","modeling","programming","spark","mathematics","ai","predictive","Hadoop","datanalysis","java","c","hive","datavisualization","tableau","sas","scala","azure","basicexcel","linux","artificialintelligence","aws","matlab,nosql","tensorflow","mapreduce","quantitative analysis","bayesian probability","jupyter","nltk","debugging","predictive analysis","matplotlib","weka"
+
+),vSize = "freq")
 ```
 
 ##### Conclusion
