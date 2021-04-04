@@ -88,18 +88,6 @@ there is **not** necessarily a *“right answer.”*
     + Individual students will not be responsible for explaining any forays into statistical analysis, modeling, data mining, regression, decision trees, etc.
     + You are encouraged to start early, ask many questions, actively post on the provided discussion forum, etc.
 
-
-##### Notes
-
-1. 
-2. 
-3. 
-4. 
-
-
-
-
-
 ### Database Creation, Import & Export {.tabset .tabset-pills}
 
 #### Connect to local Database
