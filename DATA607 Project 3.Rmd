@@ -38,6 +38,14 @@ library(stringr)
 library(tau)
 library(data.table)
 library(reactable)
+library(wordcloud)
+library(RColorBrewer)
+library(wordcloud2)
+library(gmodels)
+library(e1071)
+library(treemap)
+library(randomForest)
+library(caTools)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
@@ -451,6 +459,45 @@ totalsoft %>%
 
 <!------ Peter's analysis code ends ------>
 
+
+
+<!------ Maliat's  analysis code begins (should follow Gabriella's and Pete's code) ------>
+### Word cloud to project advantageous tech skills for Data Scientists:
+```{r}
+set.seed(1234) # for reproducibility 
+wordcloud(words =totaltech$`Hard and Tech Skills` , freq = totaltech$freq, min.freq = 1,max.words=200, random.order=FALSE, rot.per=0.35, colors=brewer.pal(8, "Dark2"))
+```
+
+```{r}
+wordcloud2(data=totaltech, size = 0.7, shape = 'pentagon')
+```
+#### TreeMap
+### Tech Skills
+
+```{r}
+treemap(totaltech, 
+        index=c("Hard and Tech Skills"),  
+        vSize = "freq",  
+        type="index", 
+        palette ="Set1",
+        title="Desireable Data Scientist Tech Skills", #Customize your title
+        fontsize.title = 14 #Change the font size of the title
+        )
+```
+### Soft Skills
+```{r}
+treemap(totalsoft, #
+        index=c("Soft Skills"), 
+        vSize = "freq",  
+        type="index", 
+        palette ="Set2",   
+        title="Desireable Data Scientist Soft Skills", 
+        fontsize.title = 14 
+        )
+
+```
+
+<!------ Maliat's  analysis ends ------>
 ##### Conclusion
 
 
