@@ -18,6 +18,7 @@ editor_options:
   chunk_output_type: console
 ---
 
+<!-- MAIN -->
 
 <!--match.arg(theme, themes()) : 
     'arg' should be one of "default", "cerulean", "journal","flatly",
@@ -25,11 +26,26 @@ editor_options:
     "sandstone", "simplex", "yeti"  -------->
 
 ```{r, echo=FALSE,warning=FALSE, results='hide', include=FALSE}
+library(devtools)
 library(tidyverse)
-library(dplyr)
-library(reactable)
-library(kableExtra)
+library(RCurl)
+library(plyr)
+library(knitr)
+library(RMySQL)
+library(DSI)
+library(odbc)
 library(stringr)
+library(tau)
+library(data.table)
+library(reactable)
+library(wordcloud)
+library(RColorBrewer)
+library(wordcloud2)
+library(gmodels)
+library(e1071)
+library(treemap)
+library(randomForest)
+library(caTools)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
@@ -81,17 +97,495 @@ there is **not** necessarily a *“right answer.”*
 
 
 
-### Primary Sub Label {.tabset .tabset-pills}
+### Database Import {.tabset .tabset-pills}
 
-#### Secondary Sub Label {.tabset}
+#### Connect to local Database 
 
-##### Import Data
+Database `job` is created on each team members local machine using MySQL. Using an **Open Data Base Connectivity (ODBC)** Driver. A connection is established using the **Data Source Name (DSN)** linking `R` to the appropriate user with `SELECT` and `INSERT` privileges. 
+
+```{r MySQL Connect Function}
+  db_conn <- dbConnect(odbc(),"data607")
+    dbListTables(db_conn)
+```
+
+```{r List the fields in the location dimension database table}
+# table location_dim fields are listed below
+dbListFields(db_conn, "location_dim")
+dbListFields(db_conn, "job_opening_tbl")
+```
+
+#### Load CSV
+
+Function `OD_DL_csv` is created in order to access the necessary `CSV` files containing over 30,000 observations. This method of was select over loading from Github, do to storage limitations with files this large. shared file URL and csv names are stored into variables `url_location`, `url_job_openings`, `csv_location` and `csv_openings` respectively. 
+
+```{r}
+
+OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
+
+   # Save the shared url 
+   URL1 <- unlist(strsplit(sharedURL,"[?]"))[1]
+   URL1 <- paste0(URL1,"?download=1") # edit URL to make it a downloadable link
+   
+   # Download the file to a temp directory using the supplied file name
+   curl::curl_download(
+      URL1,
+      destfile = file.path(tempdir(), file_name),
+      mode = "wb"
+      )
 
 
-##### Manipulating Imported Data
+   # If the user wants it saved to thier working directory this will copy the file
+   if(isTRUE(save2wd)){
+      file.copy(
+         from = paste0(tempdir(),"\\", file_name),
+         to = "./")
+      }
+
+   # return the CSV as a data.frame
+   return(read.csv(paste0(tempdir(), "\\" ,file_name), stringsAsFactors = FALSE))
+
+}
+
+```
+
+```{r}
+url_Cleaned_DS <- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EdcuUpO6t1RIqyHw-OP90UQB2qRYY3fcW5RPyA_xT348Qw?e=4HeXbe"
+
+url_DS_job_market<- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/Eai1ECgMhthLmrut-eIdD5oBw4715IvolGgyG54owY0nWg?e=D0iRKm"
+
+url_location<-
+   "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EYAX_5NCc_hFtSUFY0W4NPMBEXiRYtgro4V3vrSJbpTcag?e=aRKrpf"
+
+url_job_openings<-
+   "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EWni58F8o9BKqLwvF-FDdIEBX7nGv3l7PeueVkrUEPhJ_A?e=9hOyGN"
+
+csv_locations<-
+   "job_locations.csv"
+
+csv_job_openings<-
+   "job_openings.csv"
+
+csv_DS_job_market <-
+  "alldata.csv"
+
+csv_Cleaned_DS<- "Cleaned_DS_Jobs.csv"
+```
+
+Calling the `OD_DL_csv()` function the csv files are loaded to `location_dim_df` and `job_opening_df`
+
+```{r Source the location dimension file to load}
+location_dim_df <- OD_DL_csv(sharedURL = url_location,
+          file_name = csv_locations
+          )
+
+```
+
+```{r Source the job Openings file to load}
+
+job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
+          file_name = csv_job_openings
+          )
+```
+
+```{r Source the job Openings file to load 2}
+# additional un tidy data set
+DS_job_df <- OD_DL_csv(sharedURL = url_DS_job_market,
+          file_name = csv_DS_job_market
+          )
+```
+
+### Manipulating Imported CSV Dataset
+
+```{r, results='hide'}
+# to filter 30,000 rows in rmd and lighten the load to MySQL
+job_opening_df <- job_opening_df %>%
+  filter(grepl('Data',job_title))
+```
+
+```{r, results='hide'}
+# to filter 30,000 rows in rmd and lighten the load to MySQL
+location_dim_df <- location_dim_df %>%
+  filter(uniq_id %in% job_opening_df$uniq_id)
+```
+
+
+```{r}
+job_opening_df$job_descr <- gsub("<[^>]+>","",job_opening_df$job_descr)
+```
+
+
+```{r}
+# add unique ID column based on row name of each entry
+DS_job_df<-cbind( data.frame("uniq_id" = as.integer(rownames(DS_job_df))), DS_job_df)
+
+# add 40K to each uniq_id to ensure none match the first 30K entries of the other sets
+DS_job_df<-DS_job_df %>%
+  mutate_at( vars("uniq_id") ,
+             funs(.+40000))
+```
+
+
+
+
+```{r, results=FALSE}
+# splitting up the location column to create state, city, zip_code
+temp<-as.data.frame(str_split_fixed(DS_job_df$location,",",2))
+temp$V2<-str_trim(temp$V2)
+temp$V2<-str_replace_all(temp$V2, "\\s", " == ")
+DS_job_df<-(temp<-cbind(DS_job_df,"city" = temp$V1,
+            as.data.frame(str_split_fixed(temp$V2,"==",2)))%>%
+                                              dplyr::rename("state"=V1, "zip_code"=V2))
+# loading country column with a constan "United State" value
+DS_job_df$country<-"United States"
+
+# quick rearrange
+DS_job_df<-DS_job_df %>%
+  select(uniq_id,position,description,location,city,state,country,zip_code,company,reviews)
+
+```
+
+
+```{r}
+job_opening_df <-rbind(DS_job_df %>% 
+                         select(1,2,3) %>%
+                            dplyr::rename( "uniq_id" = `uniq_id`,
+                            "job_title" = `position`,
+                            "job_descr" = `description`)
+                      ,job_opening_df)
+```
+
+
+```{r}
+location_dim_df <-rbind(DS_job_df %>% 
+                         select(1,4,5,6,7,8),location_dim_df)
+```
+
+#### Write to Database
+
+Using [dbWriteTable](https://dbi.r-dbi.org/reference/dbwritetable) function, we are able to write these imported dataframes into the appropriate Database tables on our local Database.
+
+```{r Append new records to location dimension, result = 'hold'}
+#dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "location_dim", value = location_dim_df, append = TRUE,row.names = FALSE)
+```
+
+```{r append new records to the job opening table}
+#dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbWriteTable(db_conn, name = "job_opening_tbl", value = job_opening_df, append = TRUE, row.names = FALSE)
+```
+
+An [SQL in the Project 3 Repo](https://github.com/gcampos100/DATA607_CUNY_2021_Project3/tree/main/Gabe%20Folder) is used, to retreive the merged data, filtered by job titles, containg the word $DATA$.
+
+```{r, echo=FALSE}
+filename <-"https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Gabe%20Folder/jobs_location.sql"
+```
+
+
+```{r source sql file and substitute each new line "\n" with a space}
+filename <-"https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Gabe%20Folder/jobs_location.sql"
+db_sql <- read_file(filename)
+db_sql <- gsub("\n", " ",db_sql)
+db_sql
+```
+
+```{r execute sql query and return result set}
+result_set = dbGetQuery(db_conn, db_sql)
+#result_set = fetch(db_data, n = -1)
+head(result_set,5)
+```
+
+```{r display the class of the result set}
+class(result_set)
+```
 
 ##### Analysis
 
+###### Joe Ngram
+
+```{r}
+phrases <- result_set$job_descr
+#view(phrases)
+
+createNgram <-function(stringVector, ngramSize){
+
+  ngram <- data.table()
+
+  ng <- textcnt(stringVector, method = "string", n=ngramSize, tolower = FALSE)
+
+  if(ngramSize==1){
+    ngram <- data.table(w1 = names(ng), freq = unclass(ng), length=nchar(names(ng)))  
+  }
+  else {
+    ngram <- data.table(w1w2 = names(ng), freq = unclass(ng), length=nchar(names(ng)))
+  }
+  return(ngram)
+}
+```
+
+```{r}
+text <- phrases
+res <- createNgram(text,1)
+names(res)
+head(res %>% arrange(desc(freq)),40)
+
+```
+
+###### Gabby {.tabset .tabset-pills}
+
+#### Hard and Tech Skills
+
+Using the N-gram function which can extract single, double or more word combinations, we extracted the most common hard, technical, and soft skills we know from prior experiences and from the articles linked below. Below are the Top 20 Hard and Technical Skills in order of frequency.  
+[The Most In-Demand Tech Skills for Data Scientists](https://towardsdatascience.com/the-most-in-demand-tech-skills-for-data-scientists-d716d10c191d)  
+[Data Scientist Resume Sample Template & Data-Driven Guide](https://zety.com/blog/data-scientist-resume-example)  
+We used the N-gram function twice to extract single word skills, and then once again to extract double worded skills such as "quantitative analysis. In conjunction with the N-gram function, we leveraged dplyr functions to tidy our data, ggplot for the bar graphs and reactable for the table visual of our data. 
+
+```{r}
+# hard skills: https://towardsdatascience.com/the-most-in-demand-tech-skills-for-data-scientists-d716d10c191d
+# technical, hard and soft skills: https://zety.com/blog/data-scientist-resume-example
+# res1$w1 = tolower(res1s$w1) sets all words to lowercase
+job_descr_phrases  <- result_set$job_descr
+job_descr_text     <- job_descr_phrases
+job_phrases_1      <- createNgram(job_descr_text,1)
+job_phrases_1$w1   <- tolower(job_phrases_1$w1) # convert to lowercase for accurate counting
+job_phrases_2      <- createNgram(job_descr_text,2)
+job_phrases_2$w1w2 <- tolower(job_phrases_2$w1w2)
+# hard and tech skills single word skills
+techskill = c("python", "R", "r","sql",  "spark",  "hadoop","java",
+              "tableau", "aws", "sas", "hive",  "tensorflow", "scala",
+              "c++", "excel", "azure", "mathematics", "statistitcs",
+              "programming",  "debugging",  "probability", "modeling",
+              "matplotlib", "openrefine", "matlab", "bigml", "d3.js",
+              "excel","ggplot2","jupyter","nltk","scikit-learn","tensorflow",
+              "weka","predictive","ai","mathematics","c", "linux","nosql",
+              "basic","bayesian","mapreduce")
+
+hardskill= c("data visualization", "quantitative analysis", "data analysis",
+             "artificial intelligence", "predictive analysis", "predictive modeling",
+             "bachelors degree", "masters degree")
+```
+
+```{r}
+job_phrases_1<- 
+  job_phrases_1 %>% 
+    select(-3) %>% 
+      filter(w1 %in% techskill) %>% 
+        group_by(w1) %>% 
+          summarise_all(funs(sum)) %>% 
+            arrange(desc(freq))
+
+colnames(job_phrases_1)[1] <- "Hard and Tech Skills"
+```
+
+
+```{r}
+#hard and tech double word skills
+job_phrases_2<- 
+  job_phrases_2 %>%
+    select(-3) %>% 
+      filter(w1w2 %in% hardskill) %>% 
+        group_by(w1w2) %>% 
+          summarise_all(funs(sum))%>% 
+            arrange(desc(freq))
+
+colnames(job_phrases_2)[1] <- "Hard and Tech Skills"
+```
+
+```{r}
+#combine the single word and two word skills into one dataframe
+totaltech <- 
+  rbind(job_phrases_1, job_phrases_2) %>% 
+    arrange(desc(freq))
+
+view(totaltech)
+
+#bar graph top 20 hard and tech skills
+totaltech %>% 
+  top_n(20) %>% 
+    ggplot(aes(fct_reorder(`Hard and Tech Skills`,`freq`), `freq`))+
+      geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
+      coord_flip() +
+        xlab("") +
+        ylab("Frequency")+
+        ggtitle("Top 20 Hard and Tech Skills")
+
+reactable(totaltech, bordered = TRUE, striped = TRUE,
+          highlight = TRUE, filterable = TRUE,  showPageSizeOptions = TRUE,
+          showPagination = TRUE, pageSizeOptions = c(5, 10, 20),
+          defaultPageSize = 10)
+```
+
+
+#### Soft Skills  
+
+Note, for soft skills we extracted words similar to one another such as lead, leadership, and leader and then manually grouped them together since they all are suggestive of the same skill. The soft skills were extracted and orgaized in a similar fashion to the above hard and technical skills.
+
+```{r}
+#soft skills single word
+job_phrases_3 <- createNgram(job_descr_text,1)
+job_phrases_3$w1 <- tolower(job_phrases_3$w1) 
+softskill = c("communication", "collaboration","teamwork", "collaborate",
+              "professional", "veteran", "lead", "leadership", "leader",
+              "innovation", "innovate", "innovative", "collaborative", 
+              "passionate", "creative", "motivated", "integrity", "effectiveness",
+              "pioneering","communication", "collaboration", "preceptiveness",
+              "perseptive","teamwork","collaborate")
+job_phrases_4 <- createNgram(job_descr_text,2)
+job_phrases_4$w1w2 <- tolower(job_phrases_4$w1w2)
+softskill2 = c("critical thinking", "problem solving","interpersonal skills",
+               "time management")
+```
+
+```{r}
+job_phrases_3<- 
+  job_phrases_3 %>% 
+    select(-3) %>% 
+      filter(w1 %in% softskill) %>% 
+        group_by(w1) %>% 
+          summarise_all(funs(sum)) %>% 
+            arrange(desc(freq))
+
+colnames(job_phrases_3)[1] <- "Soft Skills"
+```
+
+```{r}
+#soft skills double word
+job_phrases_4<- job_phrases_4 %>% 
+  select(-3) %>% 
+  filter(w1w2 %in% softskill2) %>% 
+  group_by(w1w2) %>% 
+  summarise_all(funs(sum)) %>% 
+  arrange(desc(freq))
+colnames(job_phrases_4)[1] <- "Soft Skills"
+```
+
+
+```{r}
+#combine the single word and two word skills into one dataframe
+totalsoft <-
+  rbind(job_phrases_3, job_phrases_4) %>% 
+    arrange(desc(freq)) #arranges in descending order
+
+totalsoft<-
+  totalsoft[-c(2,10), ]
+totalsoft[7,2] = (302+158+141)
+
+totalsoft<-
+  totalsoft[-c(8,15), ]
+
+totalsoft[4,2] = (264+149+53)
+
+totalsoft<-
+  totalsoft[-c(12,10), ]
+totalsoft[5,2] = (203+106+91)
+
+totalsoft<- arrange(totalsoft,desc(freq))
+
+view(totalsoft)
+```
+
+```{r}
+#bar graph top 10 soft skills
+totalsoft %>% 
+  top_n(10) %>%  #extract top 10
+    ggplot(aes(fct_reorder(`Soft Skills`,`freq`), `freq`))+
+      geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
+      coord_flip() +
+      xlab("") +
+      ylab("Frequency")+
+      ggtitle("Top Ten Soft Skills")
+
+```
+
+```{r}
+reactable(totalsoft, bordered = TRUE, striped = TRUE, highlight = TRUE, filterable = TRUE,  showPageSizeOptions = TRUE, showPagination = TRUE, pageSizeOptions = c(5, 10), defaultPageSize = 5)
+```
+
+
+###### Peter {.tabset .tabset-pills}
+<!------ Peter's analysis code begins (should follow Gabriella's code) ------>
+
+#calc the percentage of hard and tech skills
+```{r calc the percentage of hard and tech skills}
+sum_totaltech_freq <- as.integer(sum(totaltech$freq))
+totaltech_freq_pct <- round(total_tech$freq/sum_totaltech_freq, 3)
+(totaltech <- cbind(totaltech, totaltech_freq_pct))
+```
+
+#bar graph of top 15 hard and tech skills as percentage
+```{r plot bar graph of top 15 hard and tech skills as percentage}
+totaltech %>%
+  top_n(15) %>%
+    ggplot(aes(y=reorder(`Hard and Tech Skills`,freq),x=freq,fill=`Tech Skills`)) +
+      geom_bar(stat = 'identity',position=position_dodge()) +
+      geom_text(aes(label=totaltech_freq_pct), vjust=1.0, color="black",
+                position = position_dodge(0.9), size=3.0) +
+      labs(y = ("Hard and Tech Skills"),x = ("Hard and Tech Skill Count"),
+           title = ("Percentage of Hard/Technical Skills Found in Data Science Job Opps")) +
+      theme_minimal()
+```
+
+```{r calc the percentage of soft skills }
+sum_totalsoft_freq <- as.integer(sum(totalsoft$freq))
+totalsoft_freq_pct <- round(totalsoft$freq/sum_totalsoft_freq, 3)
+
+(totalsoft <- cbind(totalsoft, totalsoft_freq_pct))
+```
+
+#bar graph of top 10 soft skills as percentage
+```{r plot bar graph of top 15 soft skills as percentage}
+totalsoft %>%
+  top_n(10) %>%
+    ggplot(aes(y=reorder(`Soft Skills`,freq),x=freq,fill=`Soft Skills`)) +
+      geom_bar(stat = 'identity',position=position_dodge()) +
+      geom_text(aes(label=totaltech_freq_pct), vjust=1.0, color="black", 
+            position = position_dodge(0.9), size=3.0) +
+      labs(y = ("Soft Skills"),x = ("Soft Skill Frequency"),
+           title = ("Percentage of Soft Skills Found in Data Science Job Opps")) +
+      theme_minimal()
+```
+
+<!------ Peter's analysis code ends ------>
+
+
+
+<!------ Maliat's  analysis code begins (should follow Gabriella's and Pete's code) ------>
+### Maliat
+### Word cloud to project advantageous tech skills for Data Scientists:
+```{r}
+set.seed(1234) # for reproducibility 
+wordcloud(words =totaltech$`Hard and Tech Skills` , freq = totaltech$freq, min.freq = 1,max.words=200, random.order=FALSE, rot.per=0.35, colors=brewer.pal(8, "Dark2"))
+```
+
+```{r}
+wordcloud2(data=totaltech, size = 0.7, shape = 'pentagon')
+```
+#### TreeMap
+### Tech Skills
+
+```{r}
+treemap(totaltech, 
+        index=c("Hard and Tech Skills"),  
+        vSize = "freq",  
+        type="index", 
+        palette ="Set1",
+        title="Desireable Data Scientist Tech Skills", #Customize your title
+        fontsize.title = 14 #Change the font size of the title
+        )
+```
+### Soft Skills
+```{r}
+treemap(totalsoft, #
+        index=c("Soft Skills"), 
+        vSize = "freq",  
+        type="index", 
+        palette ="Set2",   
+        title="Desireable Data Scientist Soft Skills", 
+        fontsize.title = 14 
+        )
+
+```
+
+<!------ Maliat's  analysis ends ------>
 ##### Conclusion
 
 
