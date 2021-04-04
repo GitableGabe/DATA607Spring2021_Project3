@@ -47,6 +47,8 @@ library(treemap)
 library(randomForest)
 library(caTools)
 library(muRL)
+library(webshot)
+library(htmlwidgets)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
@@ -602,10 +604,13 @@ wordcloud(words =totaltech$`Hard and Tech Skills` ,
           colors=brewer.pal(8, "Dark2"))
 ```
 
-```{r, results='hold'}
+
+```{r, results='hold', include=FALSE}
 wordcloud2(data=totaltech, size = 0.7,
            shape = 'pentagon')
 ```
+
+
 ##### TreeMap
 
 ###### Tech Skills
