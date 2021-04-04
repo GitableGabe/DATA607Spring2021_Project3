@@ -612,7 +612,18 @@ treemap(totalsoft, #
 
 <!------ Maliat's  analysis ends ------>
 ##### Conclusion
+<!------ Joe's  conclusion begins ------>
 
+
+<!------ Joe's  conclusion ends ------>
+To conclude our findings in this project, we can clearly see from the charts in our analyses that some of the most valuable skills for data scientists' are leadership, communication, SQL, statistics, and python. We also see from the job locations that the largest concentration of jobs for American data scientists are in the Northeast--particularly near New York.
+
+The foundation of this project is built upon a relational database contained within SQL, in tandem with in house programming that allowed us to read and import data into R, as well as save it to our Github seamlessly.   
+From there, we created an N-Gram function that allowed us to analyze text contained within the job descriptions. Finally, utilizing the N-Gram function, we performed analyses on the data to see which skills were  most valuable. Plotting our data onto graphs allowed us to easily understand and interpret our results in different ways, while also being very aesthetically pleasing to see.
+
+From our experience working together on this project, we can confidently say that leadership and communication were the two most important soft skills. Thanks these, we made this project a success despite varying skill levels and backgrounds because we all shared what was on our minds, with a great sense of direction of what to do next. As far as hard skills are concerned, the most important skills were building and designing databases, importing from the database into R, and performing the  analyses. 
+
+This project was a pleasure to do as we all learned from each other and expanded our skill sets simultaneously. We now understand as witnesses that soft skills are just as important as the hard skills. This is because the soft skills allowed us to get the work done in an effective manner, which is the most important goal for any project. 
 
 <!------- Below is for removing excessive space in Rmarkdown | HTML formatting -------->
 
