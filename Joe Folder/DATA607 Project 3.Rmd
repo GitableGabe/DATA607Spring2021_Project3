@@ -36,6 +36,7 @@ library(DSI)
 library(odbc)
 library(data.table)
 library(tau)
+library(muRL)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
@@ -214,6 +215,7 @@ class(result_set)
 
 ### Analysis
 N-Gram function
+<!-- This is Joe's N-Gram function used for analyses --->
 
 ```{r}
 phrases <- result_set$job_descr
@@ -244,7 +246,7 @@ head(res %>% arrange(desc(freq)),20)
 ```
 
 
-
+<!-- This is Joe's map of zip codes --->
 
 Plotting zip codes
 
@@ -255,8 +257,9 @@ table(unlist(strsplit(tolower(top_states), " ")))
 data.frame(table(unlist(strsplit(tolower(top_states), " "))))
 
 ```
-```{r, rout.width = "100%"}
-library(muRL)
+
+```{r, rout.width = "100%", warning=FALSE}
+
 
 top_states <- location_dim_df$zip_code
 
@@ -265,7 +268,7 @@ zip.plot(location_dim_df, zip.file = system.file("extdata", "zips.tab", package 
 jitter.factor = NULL)
 ```
 
-
+<!-- This is where Joe ends --->
 
 
 
