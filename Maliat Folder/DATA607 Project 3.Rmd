@@ -50,6 +50,11 @@ library(data.table)
 library(wordcloud)
 library(RColorBrewer)
 library(wordcloud2)
+library(gmodels)
+library(e1071)
+library(treemap)
+library(randomForest)
+library(caTools)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
@@ -406,9 +411,15 @@ wordcloud(words =totaltech$`Hard and Tech Skills` , freq = totaltech$freq, min.f
 ```
 
 
+
+
+##### Conclusion
+
+##### Extra Credit
+
 Random Forest
 ```{r}
-library(caTools)
+
 set.seed(100)
 split = sample.split(totaltech$`Hard and Tech Skills`, SplitRatio = 0.7)
 trainSparse = subset(totaltech, split==TRUE)
@@ -416,7 +427,7 @@ testSparse = subset(totaltech, split==FALSE)
 ```
 
 ```{r}
-library(randomForest)
+
 set.seed(100)
 trainSparse$`Hard and Tech Skills` = as.factor(trainSparse$`Hard and Tech Skills`)
 testSparse$`Hard and Tech Skills` = as.factor(testSparse$`Hard and Tech Skills` )
@@ -437,7 +448,7 @@ randomForest(formula = `Hard and Tech Skills` ~ ., data = trainSparse ,ntree=100
 
 ```{r}
 #train the model using naive bayes
-library(e1071)
+
 sms_classifier <- naiveBayes(trainSparse,trainSparse$`Hard and Tech Skills` )
 sms_pred <- predict(sms_classifier,testSparse )
 ```
@@ -446,8 +457,7 @@ sms_pred <- predict(sms_classifier,testSparse )
 
 ```{r}
 ## naive bayes
-install.packages("gmodels")
-library(gmodels)
+
 CrossTable(sms_pred, testSparse$`Hard and Tech Skills`, prop.chisq = FALSE, chisq = FALSE, 
            prop.t = FALSE,
            dnn = c("Predicted", "Actual"))
@@ -460,12 +470,10 @@ sms_pred
 
 ```{r}
 ##treemap
-library(treemap)
+
  treemap(totaltech,index =c("python","statistics","sql","modeling","programming","spark","mathematics","ai","predictive","Hadoop","datanalysis","java","c","hive","datavisualization","tableau","sas","scala","azure","basicexcel","linux","artificialintelligence","aws","matlab,nosql","tensorflow","mapreduce","quantitative analysis","bayesian probability","jupyter","nltk","debugging","predictive analysis","matplotlib","weka"
 ),vSize = "freq")
 ```
-
-##### Conclusion
 
 
 <!------- Below is for removing excessive space in Rmarkdown | HTML formatting -------->
