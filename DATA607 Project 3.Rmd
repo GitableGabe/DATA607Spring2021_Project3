@@ -301,7 +301,8 @@ class(result_set)
 
 ##### Analysis
 
-###### Joe Ngram
+N-Gram function
+<!-- This is Joe's N-Gram function used for analyses --->
 
 ```{r}
 phrases <- result_set$job_descr
@@ -327,10 +328,34 @@ createNgram <-function(stringVector, ngramSize){
 text <- phrases
 res <- createNgram(text,1)
 names(res)
-head(res %>% arrange(desc(freq)),40)
+head(res %>% arrange(desc(freq)),20)
 
 ```
 
+
+<!-- This is Joe's map of zip codes --->
+
+Plotting zip codes
+
+```{r, results='hide', echo=FALSE, warning=FALSE,message=FALSE}
+top_states <- location_dim_df$zip_code
+
+table(unlist(strsplit(tolower(top_states), " ")))
+data.frame(table(unlist(strsplit(tolower(top_states), " "))))
+
+```
+
+```{r, rout.width = "100%", warning=FALSE}
+
+
+top_states <- location_dim_df$zip_code
+
+zip.plot(location_dim_df, zip.file = system.file("extdata", "zips.tab", package = 
+"muRL"), map.type = "usa", cex = .2, col = "orange", pch = 2, 
+jitter.factor = NULL)
+```
+
+<!-- This is where Joe ends --->
 ###### Gabby {.tabset .tabset-pills}
 
 #### Hard and Tech Skills
