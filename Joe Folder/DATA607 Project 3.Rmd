@@ -148,6 +148,10 @@ csv_job_openings<-
    "job_openings.csv"
 ```
 
+```{r}
+head(url_location)
+```
+
 Calling the `OD_DL_csv()` function the csv files are loaded to `location_dim_df` and `job_opening_df`
 
 ```{r Source the location dimension file to load}
@@ -157,6 +161,43 @@ location_dim_df <- OD_DL_csv(sharedURL = url_location,
 
 head(location_dim_df,5)
 ```
+
+>>>>>>>>>><<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<
+>>>>>>>>>><<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<
+
+Plotting zip codes
+```{r}
+#view(location_dim_df)
+initials <- c("al", "ak", "az", "ar", "ca", "co", "ct", "de", "fl", "ga", "hi", "id", "il", "in", "ia", "ks", "ky", "la", "me", "md", "ma", "mi", "mn", "ms", "mo", "mt", "ne", "nv", "nh", "nj", "nm", "ny", "nc", "nd", "oh", "ok", "or", "pa", "ri", "sc", "sd", "tn", "tx", "ut", "vt", "va", "wa", "wv", "wi", "wy")
+```
+
+```{r}
+top_states <- location_dim_df$zip_code
+
+table(unlist(strsplit(tolower(top_states), " ")))
+data.frame(table(unlist(strsplit(tolower(top_states), " "))))
+
+```
+```{r, rout.width = "100%"}
+library(muRL)
+
+top_states <- location_dim_df$zip_code
+
+zip.plot(location_dim_df, zip.file = system.file("extdata", "zips.tab", package = 
+"muRL"), map.type = "usa", cex = .2, col = "orange", pch = 2, 
+jitter.factor = NULL)
+```
+
+
+
+
+
+
+
+
+
+
+><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 ```{r Source the job Openings file to load}
 job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
@@ -171,7 +212,7 @@ head(job_opening_df,5)
 Using [dbWriteTable](https://dbi.r-dbi.org/reference/dbwritetable) function, we are able to write these imported dataframes into the appropriate Database tables on our local Database.
 
 ```{r Append new records to location dimension}
-#dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
+dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
 dbWriteTable(db_conn, name = "location_dim", value = location_dim_df, append = TRUE,row.names = FALSE)
 ```
 
@@ -210,6 +251,58 @@ class(result_set)
 
 ##### Conclusion
 
+```{r}
+#view(result_set)
+# library(ggmap)
+# library(DT)
+
+```
+N-GRAM N-GRAM N-GRAM N-GRAM N-GRAM N-GRAM N-GRAM N-GRAM N-GRAM N-GRAM 
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+N-gram analysis: What words and phrases appear the most in the job description?
+
+
+
+
+
+
+
+
+
+
+
+
+>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<
+
+```{r}
+phrases <- result_set$job_descr
+#view(phrases)
+
+createNgram <-function(stringVector, ngramSize){
+
+  ngram <- data.table()
+
+  ng <- textcnt(stringVector, method = "string", n=ngramSize, tolower = FALSE)
+
+  if(ngramSize==1){
+    ngram <- data.table(w1 = names(ng), freq = unclass(ng), length=nchar(names(ng)))  
+  }
+  else {
+    ngram <- data.table(w1w2 = names(ng), freq = unclass(ng), length=nchar(names(ng)))
+  }
+  return(ngram)
+}
+```
+
+```{r}
+text <- phrases
+res <- createNgram(text,1)
+names(res)
+head(res %>% arrange(desc(freq)),20)
+
+```
 
 <!------- Below is for removing excessive space in Rmarkdown | HTML formatting -------->
 
