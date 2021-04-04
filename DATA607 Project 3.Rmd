@@ -270,6 +270,10 @@ location_dim_df <-rbind(DS_job_df %>%
 
 Using [dbWriteTable](https://dbi.r-dbi.org/reference/dbwritetable) function, we are able to write these imported dataframes into the appropriate Database tables on our local Database.
 
+The database consists of 2 tables in 2nd Normal Form as shown below
+
+![ER Diagram](DataScienceJobsDb_v2.png)
+
 ```{r, include=FALSE}
 #dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
 ```
