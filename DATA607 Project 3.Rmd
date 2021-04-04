@@ -348,7 +348,9 @@ createNgram <-function(stringVector, ngramSize){
 text <- phrases
 res <- createNgram(text,1)
 names(res)
-head(res %>% arrange(desc(freq)),20)
+head(res %>% arrange(desc(freq)),20)%>%
+  knitr::kable(caption = "Projection of Word Frequency ")%>%
+  kableExtra::kable_styling(bootstrap_options = "striped")
 
 ```
 
@@ -445,7 +447,9 @@ totaltech <-
   rbind(job_phrases_1, job_phrases_2) %>% 
     arrange(desc(freq))
 
-view(totaltech)
+head(totaltech)%>%
+  knitr::kable(caption = "Tech Skills for Data Science ")%>%
+  kableExtra::kable_styling(bootstrap_options = "striped")
 
 #bar graph top 20 hard and tech skills
 totaltech %>% 
@@ -529,7 +533,9 @@ totalsoft[5,2] = (203+106+91)
 
 totalsoft<- arrange(totalsoft,desc(freq))
 
-view(totalsoft)
+head(totalsoft)%>%
+  knitr::kable(caption = "Soft skills for Data Science jos ")%>%
+  kableExtra::kable_styling(bootstrap_options = "striped")
 ```
 
 ```{r}
@@ -556,7 +562,9 @@ reactable(totalsoft, bordered = TRUE, striped = TRUE, highlight = TRUE, filterab
 #calc the percentage of hard and tech skills
 ```{r calc the percentage of hard and tech skills}
 totaltech_freq_pct <- round((totaltech$freq/nrow(result_set))*100, 2)
-(totaltech <- cbind(totaltech, totaltech_freq_pct))
+(totaltech <- cbind(totaltech, totaltech_freq_pct))%>%
+  knitr::kable(caption = "Percentage of Hard and Tech Skills ")%>%
+  kableExtra::kable_styling(bootstrap_options = "striped")
 ```
 
 #bar graph of top 15 hard and tech skills as percentage
@@ -575,7 +583,9 @@ totaltech %>%
 ```{r calc the percentage of soft skills }
 totalsoft_freq_pct <- round((totalsoft$freq/nrow(result_set))*100, 2)
 
-(totalsoft <- cbind(totalsoft, totalsoft_freq_pct))
+(totalsoft <- cbind(totalsoft, totalsoft_freq_pct))%>%
+  knitr::kable(caption = "Percentage of Soft Skills ")%>%
+  kableExtra::kable_styling(bootstrap_options = "striped")
 ```
 
 #bar graph of top 10 soft skills as percentage
@@ -598,8 +608,9 @@ totalsoft %>%
 <!------ Maliat's  analysis code begins (should follow Gabriella's and Pete's code) ------>
 #### Word cloud and TreeMap {.tabset .tabset-pills}
 
-##### Word cloud to project advantageous tech skills for Data Scientists:
-### Word cloud reflects that python,sql,and r is a crucial skill for a data scientist to progress in this field.For soft skills leadership,communication and collaboration seems prominent.The Tree Map has identified leadership, collaboration, communication and professional skill as important soft skill to excel as a data scientist.
+
+
+###### Word cloud reflects that python,sql,and r is a crucial skill for a data scientist to progress in this field.For soft skills leadership,communication and collaboration seems prominent.The Tree Map has identified leadership, collaboration, communication and professional skill as important soft skill to excel as a data scientist.
 ```{r}
 set.seed(1234) # for reproducibility 
 wordcloud(words =totaltech$`Hard and Tech Skills` ,
