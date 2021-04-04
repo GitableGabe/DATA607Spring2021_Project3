@@ -544,50 +544,48 @@ reactable(totalsoft, bordered = TRUE, striped = TRUE, highlight = TRUE, filterab
 ```
 
 
-#### Peter
-<!------ Peter's analysis code begins (should follow Gabriella's code) ------!>
+#### Percentages
+<!------ Peter's analysis code begins (should follow Gabriella's code) ------>
 
 #calc the percentage of hard and tech skills
 ```{r calc the percentage of hard and tech skills}
-sum_totaltech_freq <- as.integer(sum(totaltech$freq))
-totaltech_freq_pct <- round(totaltech$freq/sum_totaltech_freq, 3)
+totaltech_freq_pct <- round((totaltech$freq/nrow(result_set))*100, 2)
 (totaltech <- cbind(totaltech, totaltech_freq_pct))
 ```
 
 #bar graph of top 15 hard and tech skills as percentage
 ```{r plot bar graph of top 15 hard and tech skills as percentage}
-#totaltech %>%
-#  top_n(15) %>%
-#    ggplot(aes(y=reorder(`Hard and Tech Skills`,freq),x=freq,fill=`Tech Skills`)) +
-#      geom_bar(stat = 'identity',position=position_dodge()) +
-#      geom_text(aes(label=totaltech_freq_pct), vjust=1.0, color="black",
-#                position = position_dodge(0.9), size=3.0) +
-#      labs(y = ("Hard and Tech Skills"),x = ("Hard and Tech Skill Count"),
-#           title = ("Percentage of Hard/Technical Skills Found in Data Science Job Opps")) +
-#      theme_minimal()
+totaltech %>%
+  top_n(15) %>%
+    ggplot(aes(y=reorder(`Hard and Tech Skills`,freq),x=freq,fill=`Hard and Tech Skills`)) +
+      geom_bar(stat = 'identity',position=position_dodge()) +
+      geom_text(aes(label=totaltech_freq_pct), vjust=1.0, color="black",
+                position = position_dodge(0.9), size=3.0) +
+      labs(y = ("Hard and Tech Skills"),x = ("Hard and Tech Skill Count"),
+           title = ("Percentage of Hard/Technical Skills Found in Data Science Job Opps")) +
+      theme_minimal()
 ```
 
 ```{r calc the percentage of soft skills }
-#sum_totalsoft_freq <- as.integer(sum(totalsoft$freq))
-#totalsoft_freq_pct <- round(totalsoft$freq/sum_totalsoft_freq, 3)
+totalsoft_freq_pct <- round((totalsoft$freq/nrow(result_set))*100, 2)
 
-#(totalsoft <- cbind(totalsoft, totalsoft_freq_pct))
+(totalsoft <- cbind(totalsoft, totalsoft_freq_pct))
 ```
 
 #bar graph of top 10 soft skills as percentage
-```{r plot bar graph of top 15 soft skills as percentage}
-#totalsoft %>%
-#  top_n(10) %>%
-#    ggplot(aes(y=reorder(`Soft Skills`,freq),x=freq,fill=`Soft Skills`)) +
-#      geom_bar(stat = 'identity',position=position_dodge()) +
-#      geom_text(aes(label=totaltech_freq_pct), vjust=1.0, color="black", 
-#            position = position_dodge(0.9), size=3.0) +
-#      labs(y = ("Soft Skills"),x = ("Soft Skill Frequency"),
-#           title = ("Percentage of Soft Skills Found in Data Science Job Opps")) +
-#      theme_minimal()
+```{r plot bar graph of top 10 soft skills as percentage}
+totalsoft %>%
+  top_n(10) %>%
+    ggplot(aes(y=reorder(`Soft Skills`,freq),x=freq,fill=`Soft Skills`)) +
+      geom_bar(stat = 'identity',position=position_dodge()) +
+      geom_text(aes(label=totalsoft_freq_pct), vjust=1.0, color="black", 
+            position = position_dodge(0.9), size=3.0) +
+      labs(y = ("Soft Skills"),x = ("Soft Skill Frequency"),
+           title = ("Percentage of Soft Skills Found in Data Science Job Opps")) +
+      theme_minimal()
 ```
 
-<!------ Peter's analysis code ends ------!>
+<!------ Peter's analysis code ends ------>
 
 
 
@@ -604,7 +602,7 @@ wordcloud(words =totaltech$`Hard and Tech Skills` ,
           colors=brewer.pal(8, "Dark2"))
 ```
 
-```{r}
+```{r, results='hold'}
 wordcloud2(data=totaltech, size = 0.7,
            shape = 'pentagon')
 ```
