@@ -34,6 +34,8 @@ library(RMySQL)
 library(DSI)
 library(odbc)
 library(stringr)
+library(tau)
+library(data.table)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
@@ -137,6 +139,8 @@ OD_DL_csv <- function(sharedURL, file_name, save2wd = FALSE){
 ```
 
 ```{r}
+url_Cleaned_DS <- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/EdcuUpO6t1RIqyHw-OP90UQB2qRYY3fcW5RPyA_xT348Qw?e=4HeXbe"
+
 url_DS_job_market<- "https://cuny-my.sharepoint.com/:x:/g/personal/gabriel_campos77_qmail_cuny_edu/Eai1ECgMhthLmrut-eIdD5oBw4715IvolGgyG54owY0nWg?e=D0iRKm"
 
 url_location<-
@@ -153,6 +157,8 @@ csv_job_openings<-
 
 csv_DS_job_market <-
   "alldata.csv"
+
+csv_Cleaned_DS<- "Cleaned_DS_Jobs.csv"
 ```
 
 Calling the `OD_DL_csv()` function the csv files are loaded to `location_dim_df` and `job_opening_df`
@@ -162,7 +168,6 @@ location_dim_df <- OD_DL_csv(sharedURL = url_location,
           file_name = csv_locations
           )
 
-head(location_dim_df,5)
 ```
 
 ```{r Source the job Openings file to load}
@@ -170,8 +175,6 @@ head(location_dim_df,5)
 job_opening_df <- OD_DL_csv(sharedURL = url_job_openings,
           file_name = csv_job_openings
           )
-
-head(job_opening_df,5)
 ```
 
 ```{r Source the job Openings file to load 2}
@@ -179,11 +182,26 @@ head(job_opening_df,5)
 DS_job_df <- OD_DL_csv(sharedURL = url_DS_job_market,
           file_name = csv_DS_job_market
           )
-
-head(DS_job_df,5)
 ```
 
 ### Manipulating Imported CSV Dataset
+
+```{r, results='hide'}
+# to filter 30,000 rows in rmd and lighten the load to MySQL
+job_opening_df <- job_opening_df %>%
+  filter(grepl('Data',job_title))
+```
+
+```{r, results='hide'}
+# to filter 30,000 rows in rmd and lighten the load to MySQL
+location_dim_df <- location_dim_df %>%
+  filter(uniq_id %in% job_opening_df$uniq_id)
+```
+
+
+```{r}
+job_opening_df$job_descr <- gsub("<[^>]+>","",job_opening_df$job_descr)
+```
 
 
 ```{r}
@@ -279,6 +297,141 @@ class(result_set)
 ```
 
 ### Analysis
+
+```{r}
+phrases <- result_set$job_descr
+#view(phrases)
+
+createNgram <-function(stringVector, ngramSize){
+
+  ngram <- data.table()
+
+  ng <- textcnt(stringVector, method = "string", n=ngramSize, tolower = FALSE)
+
+  if(ngramSize==1){
+    ngram <- data.table(w1 = names(ng), freq = unclass(ng), length=nchar(names(ng)))  
+  }
+  else {
+    ngram <- data.table(w1w2 = names(ng), freq = unclass(ng), length=nchar(names(ng)))
+  }
+  return(ngram)
+}
+```
+
+```{r}
+text <- phrases
+res <- createNgram(text,1)
+names(res)
+head(res %>% arrange(desc(freq)),40)
+
+```
+
+
+
+```{r}
+res <- res %>%
+  arrange(desc(freq))
+view(res)
+
+```
+
+#### Hard and Tech Skills
+```{r}
+# hard skills: https://towardsdatascience.com/the-most-in-demand-tech-skills-for-data-scientists-d716d10c191d
+# technical, hard and soft skills: https://zety.com/blog/data-scientist-resume-example
+# res1$w1 = tolower(res1s$w1) sets all words to lowercase
+job_descr_phrases <- result_set$job_descr
+job_descr_text <- job_descr_phrases
+
+# hard and tech skills single word skills
+job_phrases_1 <- createNgram(job_descr_text,1)
+job_phrases_1$w1 <- tolower(job_phrases_1$w1) # convert to lowercase for accurate counting
+techskill = c("python", "R", "r","sql",  "spark",  "hadoop","java", "tableau", "aws", "sas", "hive",  "tensorflow", "scala", "c++", "excel", "azure", "mathematics", "statistitcs", "programming",  "debugging",  "probability", "modeling", "matplotlib", "openrefine", "matlab", "bigml", "d3.js", "excel","ggplot2","jupyter","nltk","scikit-learn","tensorflow","weka","predictive","ai","mathematics","c", "linux","nosql","basic","bayesian","mapreduce")
+job_phrases_1<- job_phrases_1 %>% 
+  select(-3) %>% 
+  filter(w1 %in% techskill) %>% 
+  group_by(w1) %>% 
+  summarise_all(funs(sum)) %>% 
+  arrange(desc(freq))
+colnames(job_phrases_1)[1] <- "Hard and Tech Skills"
+
+#hard and tech double word skills
+job_phrases_2 <- createNgram(job_descr_text,2)
+job_phrases_2$w1w2 <- tolower(job_phrases_2$w1w2)
+hardskill= c("data visualization", "quantitative analysis", "data analysis", "artificial intelligence", "predictive analysis", "predictive modeling", "bachelors degree", "masters degree")
+job_phrases_2<- job_phrases_2 %>% 
+  select(-3) %>% 
+  filter(w1w2 %in% hardskill) %>% 
+  group_by(w1w2) %>% 
+  summarise_all(funs(sum))%>% 
+  arrange(desc(freq))
+colnames(job_phrases_2)[1] <- "Hard and Tech Skills"
+
+#combine the single word and two word skills into one dataframe
+totaltech <- rbind(job_phrases_1, job_phrases_2) %>% 
+  arrange(desc(freq))
+view(totaltech)
+
+#bar graph top 20 hard and tech skills
+totaltech %>% 
+  top_n(20) %>% 
+  ggplot(aes(fct_reorder(`Hard and Tech Skills`,`freq`), `freq`))+
+  geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
+  coord_flip() +
+  xlab("") +
+  ylab("Frequency")
+```
+
+
+#### Soft Skills
+```{r}
+#soft skills single word
+job_phrases_3 <- createNgram(job_descr_text,1)
+job_phrases_3$w1 <- tolower(job_phrases_3$w1) 
+softskill = c("communication", "collaboration","teamwork", "collaborate", "professional", "veteran", "lead", "leadership", "leader", "innovation", "innovate", "innovative", "collaborative", "passionate", "creative", "motivated", "integrity", "effectiveness", "pioneering","communication", "collaboration", "preceptiveness", "perseptive","teamwork","collaborate",)
+job_phrases_3<- job_phrases_3 %>% 
+  select(-3) %>% 
+  filter(w1 %in% softskill) %>% 
+  group_by(w1) %>% 
+  summarise_all(funs(sum)) %>% 
+  arrange(desc(freq))
+colnames(job_phrases_3)[1] <- "Soft Skills"
+
+#soft skills double word
+job_phrases_4 <- createNgram(job_descr_text,2)
+job_phrases_4$w1w2 <- tolower(job_phrases_4$w1w2)
+softskill2 = c("critical thinking", "problem solving","interpersonal skills", "time management",)
+job_phrases_4<- job_phrases_4 %>% 
+  select(-3) %>% 
+  filter(w1w2 %in% softskill2) %>% 
+  group_by(w1w2) %>% 
+  summarise_all(funs(sum)) %>% 
+  arrange(desc(freq))
+colnames(job_phrases_4)[1] <- "Soft Skills"
+
+#combine the single word and two word skills into one dataframe
+totalsoft <- rbind(job_phrases_3, job_phrases_4) %>% 
+  arrange(desc(freq))
+totalsoft<-totalsoft[-c(2,10), ]
+totalsoft[7,2] = (302+158+141)
+totalsoft<- arrange(totalsoft,desc(freq))
+view(totalsoft)
+
+#bar graph top 10 soft skills
+totalsoft %>% 
+  top_n(10) %>% 
+  ggplot(aes(fct_reorder(`Soft Skills`,`freq`), `freq`))+
+  geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
+  coord_flip() +
+  xlab("") +
+  ylab("Frequency")
+```
+
+```{r}
+
+```
+
+
 
 ##### Conclusion
 

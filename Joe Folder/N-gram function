@@ -28,3 +28,16 @@ names(res)
 head(res %>% arrange(desc(freq)),40)
 #res
 ```
+
+*** 4/3/21 *** 
+
+MAP OF JOB DESCRIPTION ZIP CODES
+```{r, rout.width = "100%"}
+library(muRL)
+
+top_states <- location_dim_df$zip_code
+
+zip.plot(location_dim_df, zip.file = system.file("extdata", "zips.tab", package = 
+"muRL"), map.type = "usa", cex = .2, col = "orange", pch = 2, 
+jitter.factor = NULL)
+```

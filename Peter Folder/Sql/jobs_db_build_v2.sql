@@ -1,3 +1,6 @@
+# SHOW GRANTS FOR 'data607'@'localhost';
+# GRANT SELECT,INSERT ON jobs.* TO 'data607'@'localhost';
+
 -- MySQL dump 10.13  Distrib 5.6.26, for Win64 (x86_64)
 --
 -- Host: localhost    Database: jobs
