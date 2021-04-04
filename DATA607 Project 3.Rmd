@@ -291,6 +291,7 @@ class(result_set)
 
 ##### Analysis
 
+###### Peter {.tabset .tabset-pills}
 <!------ Peter's analysis code begins (should follow Gabriella's code) ------>
 
 #calc the percentage of hard and tech skills
