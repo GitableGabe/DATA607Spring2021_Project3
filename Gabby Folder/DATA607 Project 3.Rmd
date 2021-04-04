@@ -400,7 +400,7 @@ Note, for soft skills we extracted words similar to one another such as lead, le
 #soft skills single word
 job_phrases_3 <- createNgram(job_descr_text,1)
 job_phrases_3$w1 <- tolower(job_phrases_3$w1) 
-softskill = c("communication", "collaboration","teamwork", "collaborate", "professional", "veteran", "lead", "leadership", "leader", "innovation", "innovate", "innovative", "collaborative", "passionate", "creative", "motivated", "integrity", "effectiveness", "pioneering","communication", "collaboration", "preceptiveness", "perseptive","teamwork","collaborate",)
+softskill = c("communication", "collaboration","teamwork", "collaborate", "professional", "veteran", "lead", "leadership", "leader", "innovation", "innovate", "innovative", "collaborative", "passionate", "creative", "motivated", "integrity", "effectiveness", "pioneering","communication", "collaboration", "preceptiveness", "perseptive","teamwork","collaborate")
 job_phrases_3<- job_phrases_3 %>% 
   select(-3) %>% 
   filter(w1 %in% softskill) %>% 
