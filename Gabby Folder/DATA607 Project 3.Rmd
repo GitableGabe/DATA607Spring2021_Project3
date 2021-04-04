@@ -335,7 +335,14 @@ view(res)
 
 ```
 
+
 #### Hard and Tech Skills
+
+Using the N-gram function which can extract single, double or more word combinations, we extracted the most common hard, technical, and soft skills we know from prior experiences and from the articles linked below. Below are the Top 20 Hard and Technical Skills in order of frequency.  
+[The Most In-Demand Tech Skills for Data Scientists](https://towardsdatascience.com/the-most-in-demand-tech-skills-for-data-scientists-d716d10c191d)  
+[Data Scientist Resume Sample Template & Data-Driven Guide](https://zety.com/blog/data-scientist-resume-example)  
+We used the N-gram function twice to extract single word skills, and then once again to extract double worded skills such as "quantitative analysis. In conjunction with the N-gram function, we leveraged dplyr functions to tidy our data, ggplot for the bar graphs and reactable for the table visual of our data.
+
 ```{r}
 # hard skills: https://towardsdatascience.com/the-most-in-demand-tech-skills-for-data-scientists-d716d10c191d
 # technical, hard and soft skills: https://zety.com/blog/data-scientist-resume-example
@@ -379,11 +386,16 @@ totaltech %>%
   geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
   coord_flip() +
   xlab("") +
-  ylab("Frequency")
+  ylab("Frequency")+
+  ggtitle("Top 20 Hard and Tech Skills")
+
+reactable(totaltech, bordered = TRUE, striped = TRUE, highlight = TRUE, filterable = TRUE,  showPageSizeOptions = TRUE, showPagination = TRUE, pageSizeOptions = c(5, 10, 20), defaultPageSize = 10)
 ```
 
 
-#### Soft Skills
+#### Soft Skills  
+
+Note, for soft skills we extracted words similar to one another such as lead, leadership, and leader and then manually grouped them together since they all are suggestive of the same skill. The soft skills were extracted and orgaized in a similar fashion to the above hard and technical skills.  
 ```{r}
 #soft skills single word
 job_phrases_3 <- createNgram(job_descr_text,1)
@@ -411,26 +423,29 @@ colnames(job_phrases_4)[1] <- "Soft Skills"
 
 #combine the single word and two word skills into one dataframe
 totalsoft <- rbind(job_phrases_3, job_phrases_4) %>% 
-  arrange(desc(freq))
+  arrange(desc(freq)) #arranges in descending order
 totalsoft<-totalsoft[-c(2,10), ]
 totalsoft[7,2] = (302+158+141)
+totalsoft<-totalsoft[-c(8,15), ]
+totalsoft[4,2] = (264+149+53)
+totalsoft<-totalsoft[-c(12,10), ]
+totalsoft[5,2] = (203+106+91)
 totalsoft<- arrange(totalsoft,desc(freq))
 view(totalsoft)
 
 #bar graph top 10 soft skills
 totalsoft %>% 
-  top_n(10) %>% 
+  top_n(10) %>%  #extract top 10
   ggplot(aes(fct_reorder(`Soft Skills`,`freq`), `freq`))+
   geom_bar(stat="identity", fill="#f68060", alpha=.6, width=.4) +
   coord_flip() +
   xlab("") +
-  ylab("Frequency")
+  ylab("Frequency")+
+  ggtitle("Top Ten Soft Skills")
+
+
+reactable(totalsoft, bordered = TRUE, striped = TRUE, highlight = TRUE, filterable = TRUE,  showPageSizeOptions = TRUE, showPagination = TRUE, pageSizeOptions = c(5, 10), defaultPageSize = 5)
 ```
-
-```{r}
-
-```
-
 
 
 ##### Conclusion
