@@ -24,22 +24,7 @@ editor_options:
     "darkly", "readable", "spacelab", "united", "cosmo", "lumen", "paper", 
     "sandstone", "simplex", "yeti"  -------->
 
-```{r, echo=FALSE,warning=FALSE, results='hide', include=FALSE}
-library(devtools)
-library(tidyverse)
-library(RCurl)
-library(plyr)
-library(knitr)
-library(RMySQL)
-library(DSI)
-library(odbc)
-library(stringr)
-library(tau)
-library(data.table)
-library(wordcloud)
-library(RColorBrewer)
-library(wordcloud2)
-```
+
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
 
