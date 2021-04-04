@@ -47,6 +47,8 @@ library(treemap)
 library(randomForest)
 library(caTools)
 library(muRL)
+library(webshot)
+library(htmlwidgets)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
@@ -267,6 +269,10 @@ location_dim_df <-rbind(DS_job_df %>%
 #### Write to Database
 
 Using [dbWriteTable](https://dbi.r-dbi.org/reference/dbwritetable) function, we are able to write these imported dataframes into the appropriate Database tables on our local Database.
+
+The database consists of 2 tables in 2nd Normal Form as shown below
+
+![ER Diagram](DataScienceJobsDb_v2.png)
 
 ```{r, include=FALSE}
 #dbSendQuery(db_conn, "SET GLOBAL local_infile = true;")
@@ -603,10 +609,13 @@ wordcloud(words =totaltech$`Hard and Tech Skills` ,
           colors=brewer.pal(8, "Dark2"))
 ```
 
-```{r, results='hold'}
+
+```{r, results='hold', include=FALSE}
 wordcloud2(data=totaltech, size = 0.7,
            shape = 'pentagon')
 ```
+
+
 ##### TreeMap
 
 ###### Tech Skills
