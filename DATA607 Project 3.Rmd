@@ -549,6 +549,7 @@ totalsoft %>%
 
 
 <!------ Maliat's  analysis code begins (should follow Gabriella's and Pete's code) ------>
+### Maliat
 ### Word cloud to project advantageous tech skills for Data Scientists:
 ```{r}
 set.seed(1234) # for reproducibility 
