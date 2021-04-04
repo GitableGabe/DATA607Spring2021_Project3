@@ -37,6 +37,7 @@ library(odbc)
 library(stringr)
 library(tau)
 library(data.table)
+library(reactable)
 ```
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
