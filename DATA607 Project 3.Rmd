@@ -597,8 +597,10 @@ totalsoft %>%
 #### Word cloud and TreeMap {.tabset .tabset-pills}
 
 
+##### Word Cloud
+Word cloud reflects that python,sql,and r is a crucial skill for a data scientist to progress in this field. For soft skills leadership,communication and collaboration seems prominent.The Tree Map has identified leadership, collaboration, communication and professional skill as important soft skill to excel as a data scientist.  
+**Hard and Tech Skills**  
 
-###### Word cloud reflects that python,sql,and r is a crucial skill for a data scientist to progress in this field.For soft skills leadership,communication and collaboration seems prominent.The Tree Map has identified leadership, collaboration, communication and professional skill as important soft skill to excel as a data scientist.
 ```{r}
 set.seed(1234) # for reproducibility 
 wordcloud(words =totaltech$`Hard and Tech Skills` ,
@@ -607,6 +609,9 @@ wordcloud(words =totaltech$`Hard and Tech Skills` ,
           rot.per=0.35,
           colors=brewer.pal(8, "Dark2"))
 ```
+
+  
+**Soft Skills**  
 
 ```{r}
 set.seed(1234) # for reproducibility 
@@ -618,6 +623,7 @@ wordcloud(words =totalsoft$`Soft Skills` ,
 
 ```
 
+
 ```{r, results='hold', include=FALSE}
 wordcloud2(data=totaltech, size = 0.7,
            shape = 'pentagon')
@@ -626,7 +632,7 @@ wordcloud2(data=totaltech, size = 0.7,
 
 ##### TreeMap
 
-###### Tech Skills
+**Tech Skills**
 
 ```{r}
 treemap(totaltech, 
@@ -639,7 +645,7 @@ treemap(totaltech,
         )
 ```
 
-###### Soft Skills
+**Soft Skills**
 ```{r}
 treemap(totalsoft, #
         index=c("Soft Skills"), 
