@@ -280,7 +280,7 @@ dbWriteTable(db_conn, name = "location_dim", value = location_dim_df, append = T
 dbWriteTable(db_conn, name = "job_opening_tbl", value = job_opening_df, append = TRUE, row.names = FALSE)
 ```
 
-An [SQL in the Project 3 Repo](https://github.com/gcampos100/DATA607_CUNY_2021_Project3/tree/main/Gabe%20Folder) is used, to retreive the merged data, filtered by job titles, containg the word $DATA$.
+An [SQL in the Project 3 Repo](https://github.com/gcampos100/DATA607_CUNY_2021_Project3/tree/main/Gabe%20Folder) is used, to retreive the merged data, filtered by job titles, containing the word $DATA$.
 
 ```{r, echo=FALSE}
 filename <-"https://raw.githubusercontent.com/gcampos100/DATA607_CUNY_2021_Project3/main/Gabe%20Folder/jobs_location.sql"
@@ -653,12 +653,11 @@ treemap(totalsoft, #
 ```
 
 <!------ Maliat's  analysis ends ------>
-<<<<<<< HEAD
-##### Conclusion
+
 <!------ Joe's  conclusion begins ------>
-=======
+
 ### Conclusion
->>>>>>> 73db9dbeb348bd976ffbb696fe8ac450c09dca1e
+
 
 
 <!------ Joe's  conclusion ends ------>
