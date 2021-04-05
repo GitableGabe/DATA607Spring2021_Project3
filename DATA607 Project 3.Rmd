@@ -1,6 +1,6 @@
 ---
 title: "DATA607 Project 3 – Data Science Skills"
-author: "Joe Connolly, Gabriel Campos, Gabriella Martinez,Maliat Islam and Peter Gatica"
+author: "Joe Connolly, Gabriel Campos, Gabriella Martinez, Maliat Islam and Peter Gatica"
 date: "`r format(Sys.Date(), '%B %d %Y')`"
 output:
   html_document:
