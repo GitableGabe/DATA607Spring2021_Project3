@@ -53,7 +53,7 @@ library(htmlwidgets)
 
 <!-- (https://rdrr.io/cran/reactable/man/reactable.html) -->
 
-### Main Title {.tabset .tabset-pills}
+### Which are the most valued data science skills? {.tabset .tabset-pills}
 
 
 
@@ -492,10 +492,10 @@ colnames(job_phrases_3)[1] <- "Soft Skills"
 #soft skills double word
 job_phrases_4<- job_phrases_4 %>% 
   select(-3) %>% 
-  filter(w1w2 %in% softskill2) %>% 
-  group_by(w1w2) %>% 
-  summarise_all(funs(sum)) %>% 
-  arrange(desc(freq))
+    filter(w1w2 %in% softskill2) %>% 
+      group_by(w1w2) %>% 
+        summarise_all(funs(sum)) %>% 
+          arrange(desc(freq))
 colnames(job_phrases_4)[1] <- "Soft Skills"
 ```
 
